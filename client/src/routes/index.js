@@ -1,6 +1,7 @@
 
 
 import HomePage from "../pages/HomePage/HomePage";
+import FavoritePage from "../pages/FavoritePage/FavoritePage";
 import AdminStockPage from "../pages/AdminStockPage";
 import NotFoundPage from "../pages/NotFoundPage/NotFoundPage";
 import SignInPage from "../pages/SignInPage/SignInPage";
@@ -17,6 +18,7 @@ import ProductDetailPage from "../pages/ProductDetailPage/ProductDetailPage";
 // Public routes
 const publicRoutes = [
   { path: "/", page: HomePage, isShowHeader: true, title: "Home" },
+  { path: "/favorite", page: FavoritePage, isShowHeader: true, title: "Yêu thích" },
   { path: "/sign-in", page: SignInPage, isShowHeader: false, title: "Sign In" },
   { path: "/sign-up", page: SignUpPage, isShowHeader: false, title: "Sign Up" },
   {

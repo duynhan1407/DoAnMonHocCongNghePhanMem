@@ -24,16 +24,21 @@ export const WrapperButtonMore = styled(ButtonComponent)`
 `;
 
 export const WrapperProducts = styled.div`
-    display: flex;
-    justify-content: center;
-    gap: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 18px;
     margin-top: 24px;
-    flex-wrap: wrap;
     background: linear-gradient(135deg, #f0f8ff 0%, #e0e7ff 100%);
     border-radius: 12px;
     padding: 18px 12px;
-
+    justify-items: center;
+    align-items: start;
+    
+    @media (max-width: 1200px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
     @media (max-width: 900px) {
+        grid-template-columns: 1fr;
         padding: 0 10px !important;
     }
 `;

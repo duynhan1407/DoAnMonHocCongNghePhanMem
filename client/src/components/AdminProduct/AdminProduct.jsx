@@ -1,4 +1,7 @@
+
 import React, { useState, useEffect } from "react";
+import eventBus from '../../utils/eventBus';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Modal,
@@ -13,16 +16,15 @@ import {
   InputNumber,
   Card,
   Badge,
-  Tag
+  Tag,
 } from "antd";
-import { UploadOutlined, PlusOutlined, SearchOutlined, EyeOutlined } from "@ant-design/icons";
-import Highlighter from "react-highlight-words";
-import * as ProductService from "../../services/ProductService";
-import { WrapperHeader } from "../HeaderComponent/Style";
-import * as BrandService from '../../services/BrandService';
-
+import { SearchOutlined, EyeOutlined, PlusOutlined, UploadOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import Highlighter from 'react-highlight-words';
+import { getAllProducts, createProduct, updateProduct, deleteProduct, getAllBrands as getAllBrandsFromProduct } from '../../services/ProductService';
+import { getAllBrands, createBrand } from '../../services/BrandService';
 
 function QuanLySanPham() {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [products, setProducts] = useState([]);
@@ -36,9 +38,11 @@ function QuanLySanPham() {
   const [actionLoading, setActionLoading] = useState(false);
   const searchInput = React.useRef(null);
 
+  // Trạng thái đơn hàng mới
   const statusOptions = [
-    { label: "Còn hàng", value: "Available", color: "green" },
-    { label: "Hết hàng", value: "OutOfStock", color: "red" },
+    { label: "Đang xác nhận", value: "confirming", color: "orange" },
+    { label: "Đang giao hàng", value: "shipping", color: "blue" },
+    { label: "Đã giao hàng", value: "delivered", color: "green" },
   ];
 
   const categories = [
@@ -50,19 +54,38 @@ function QuanLySanPham() {
   // Fetch product data
   const [brands, setBrands] = useState([]);
   const [newBrandInput, setNewBrandInput] = useState("");
+  const [productNamesInStock, setProductNamesInStock] = useState([]);
+  const [productBrandMap, setProductBrandMap] = useState({});
+  // Hiển thị mỗi màu là 1 dòng riêng biệt với số lượng riêng
   const fetchProducts = async (params = {}) => {
     setLoading(true);
     try {
-      const response = await ProductService.getAllProducts(params);
+      const response = await getAllProducts(params);
       if (response?.data && Array.isArray(response.data)) {
-        setProducts(
-          response.data.map((product) => ({
-            ...product,
-            key: product._id,
-          }))
-        );
-        if (pagination.total !== (response.total || response.data.length)) {
-          setPagination((prev) => ({ ...prev, total: response.total || response.data.length }));
+        // Tách mỗi màu thành 1 dòng riêng biệt
+        const productList = [];
+        response.data.forEach(product => {
+          if (Array.isArray(product.colors) && product.colors.length > 0) {
+            product.colors.forEach((color) => {
+              productList.push({
+                ...product,
+                color,
+                key: `${product._id}-${color}`,
+              });
+            });
+          } else {
+            productList.push({
+              ...product,
+              color: null,
+              key: `${product._id}-no-color`,
+            });
+          }
+        });
+        // Lọc quantity > 0
+        const filteredList = productList.filter(p => (p.quantity || 0) > 0);
+        setProducts(filteredList);
+        if (pagination.total !== (response.total || filteredList.length)) {
+          setPagination((prev) => ({ ...prev, total: response.total || filteredList.length }));
         }
       } else {
         throw new Error("Invalid product data structure.");
@@ -74,14 +97,57 @@ function QuanLySanPham() {
     }
   };
 
+  // Lấy danh sách tên sản phẩm từ kho (quantity > 0)
+  // (Retain for modal logic, but only for update, not creation)
+  const fetchProductNamesInStock = async () => {
+    try {
+      const res = await getAllProducts();
+      if (res?.data && Array.isArray(res.data)) {
+        const filtered = res.data.filter(p => (p.quantity || 0) > 0);
+        const names = filtered.map(p => p.name);
+        setProductNamesInStock([...new Set(names)]);
+        // Map tên sản phẩm sang brand
+        const map = {};
+        filtered.forEach(p => {
+          if (p.name && p.brand) map[p.name] = p.brand;
+        });
+        setProductBrandMap(map);
+      }
+    } catch {}
+  };
+
+
   useEffect(() => {
     fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
+    // Lắng nghe reloadProducts để tự động reload sản phẩm khi có sự kiện từ eventBus hoặc localStorage
+    const reloadHandler = () => {
+      fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
+    };
+    eventBus.on('reloadProducts', reloadHandler);
+    const storageHandler = (e) => {
+      if (e.key === 'reloadProducts') {
+        fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
+      }
+    };
+    window.addEventListener('storage', storageHandler);
+    // Cleanup khi unmount
+    return () => {
+      eventBus.off('reloadProducts', reloadHandler);
+      window.removeEventListener('storage', storageHandler);
+    };
     // eslint-disable-next-line
   }, [pagination.current, pagination.pageSize]);
 
+  // Lấy tên sản phẩm từ kho khi mở modal tạo/sửa sản phẩm
+  useEffect(() => {
+    if (isModalOpen) {
+      fetchProductNamesInStock();
+    }
+  }, [isModalOpen]);
+
   // Lấy brands từ backend khi mở modal
   const fetchBrands = async () => {
-    const res = await BrandService.getAllBrands();
+    const res = await getAllBrands();
     if (res?.data) setBrands(res.data);
   };
 
@@ -149,43 +215,91 @@ function QuanLySanPham() {
     setSearchText("");
   };
 
+  // Chuyển sang trang chi tiết sản phẩm
   const handleShowDetail = (product) => {
-    setDetailProduct(product);
-  };
-  const handleCloseDetail = () => {
-    setDetailProduct(null);
+    if (product && product._id) {
+      navigate(`/product/${product._id}`);
+    }
   };
 
-const handleFormSubmit = async (values) => {
-  setActionLoading(true);
-  try {
-    // Đảm bảo chỉ truyền mảng url string cho images
-    let productData = { ...values };
-    if (Array.isArray(values.images)) {
-      productData.images = values.images.filter(img => typeof img === 'string');
-      if (!productData.image && productData.images.length > 0) {
-        productData.image = productData.images[0];
-      }
-    }
-    if (currentProduct?._id) {
-      await ProductService.updateProduct(currentProduct._id, productData);
-      message.success("Cập nhật sản phẩm thành công!");
+  // Thêm vào giỏ hàng (localStorage)
+  const handleAddToCart = (product) => {
+    if (!product) return;
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    // Nếu đã có sản phẩm cùng id và màu thì tăng số lượng, ngược lại thêm mới
+    const idx = cart.findIndex(
+      (item) => item._id === product._id && item.color === product.color
+    );
+    if (idx > -1) {
+      cart[idx].quantity = (cart[idx].quantity || 1) + 1;
     } else {
-      // Tự động sinh mã sản phẩm nếu chưa có
-      if (!productData.productCode) {
-        productData.productCode = 'SP' + Date.now() + Math.floor(Math.random()*1000);
-      }
-      await ProductService.createProduct(productData);
-      message.success("Tạo sản phẩm mới thành công!");
+      cart.push({
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image,
+        color: product.color,
+        quantity: 1,
+      });
     }
-    fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
-    closeModal();
-  } catch (error) {
-    message.error(error?.response?.data?.message || "Không thể lưu thông tin sản phẩm.");
-  } finally {
-    setActionLoading(false);
-  }
-};
+    localStorage.setItem('cart', JSON.stringify(cart));
+    message.success('Đã thêm vào giỏ hàng!');
+  };
+
+  const handleFormSubmit = async (values) => {
+    setActionLoading(true);
+    try {
+      // Chỉ cho phép cập nhật, không cho phép tạo mới
+      if (!currentProduct?._id) {
+        message.error("Chỉ được cập nhật sản phẩm, không được thêm mới ở đây!");
+        setActionLoading(false);
+        return;
+      }
+      // Đảm bảo chỉ truyền mảng url string cho images
+      let productData = { ...values };
+      if (Array.isArray(values.images)) {
+        productData.images = values.images.filter(img => typeof img === 'string');
+        if (!productData.image && productData.images.length > 0) {
+          productData.image = productData.images[0];
+        }
+      }
+      await updateProduct(currentProduct._id, productData);
+      message.success("Cập nhật sản phẩm thành công!");
+      // Cập nhật lại chỉ dòng sản phẩm vừa sửa, giữ lại các dòng khác màu
+      const updatedRes = await getAllProducts({ _id: currentProduct._id });
+      if (updatedRes?.data && Array.isArray(updatedRes.data)) {
+        const updatedProduct = updatedRes.data[0];
+        // Tách mỗi màu thành 1 dòng riêng biệt
+        let updatedRows = [];
+        if (Array.isArray(updatedProduct.colors) && updatedProduct.colors.length > 0) {
+          updatedRows = updatedProduct.colors.map((color) => ({
+            ...updatedProduct,
+            color,
+            key: `${updatedProduct._id}-${color}`,
+          }));
+        } else {
+          updatedRows = [{
+            ...updatedProduct,
+            color: null,
+            key: `${updatedProduct._id}-no-color`,
+          }];
+        }
+        setProducts(prev => {
+          // Loại bỏ các dòng cùng _id
+          const filtered = prev.filter(p => p._id !== currentProduct._id);
+          // Thêm lại các dòng mới
+          return [...filtered, ...updatedRows].filter(p => (p.quantity || 0) > 0);
+        });
+      } else {
+        fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
+      }
+      closeModal();
+    } catch (error) {
+      message.error(error?.response?.data?.message || "Không thể lưu thông tin sản phẩm.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -195,36 +309,28 @@ const handleFormSubmit = async (values) => {
   };
 
   const handleBeforeUpload = (file) => {
-    const isImage = file.type === "image/jpeg" || file.type === "image/png";
-    if (!isImage) {
-      message.error("Chỉ được tải lên tệp JPG/PNG!");
-      return Upload.LIST_IGNORE;
-    }
-  
+    // Chỉ kiểm tra dung lượng, không kiểm tra định dạng file
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
       message.error("Hình ảnh phải nhỏ hơn 2MB!");
       return Upload.LIST_IGNORE;
     }
-  
     return true;
   };
-  
 
-const handleUploadChange = ({ fileList: newFileList }) => {
-  // Chỉ giữ lại fileList cho preview, form chỉ lưu url string
-  const filesWithUrl = newFileList.map((file) => ({
-    ...file,
-    url: file.response?.url || file.url,
-  }));
-  setFileList(filesWithUrl);
-  // Lấy tất cả url ảnh đã upload thành công
-  const uploadedUrls = filesWithUrl
-    .filter(f => f.status === 'done' && (f.response?.url || f.url))
-    .map(f => f.response?.url || f.url);
-  form.setFieldsValue({ images: uploadedUrls });
-};
-  
+  const handleUploadChange = ({ fileList: newFileList }) => {
+    // Chỉ giữ lại fileList cho preview, form chỉ lưu url string
+    const filesWithUrl = newFileList.map((file) => ({
+      ...file,
+      url: file.response?.url || file.url,
+    }));
+    setFileList(filesWithUrl);
+    // Lấy tất cả url ảnh đã upload thành công
+    const uploadedUrls = filesWithUrl
+      .filter(f => f.status === 'done' && (f.response?.url || f.url))
+      .map(f => f.response?.url || f.url);
+    form.setFieldsValue({ images: uploadedUrls });
+  };
 
   const handleEditProduct = (record) => {
     setCurrentProduct(record);
@@ -247,13 +353,14 @@ const handleUploadChange = ({ fileList: newFileList }) => {
     }
     setFileList(imagesArr);
     setIsModalOpen(true);
-    form.setFieldsValue(record);
+    // Khi sửa, chỉ lấy đúng màu của dòng sản phẩm đang sửa
+    form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [] });
   };
 
   const handleDeleteProduct = async (id) => {
     setActionLoading(true);
     try {
-      await ProductService.deleteProduct(id);
+      await deleteProduct(id);
       message.success("Xóa sản phẩm thành công!");
       fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
     } catch (error) {
@@ -263,12 +370,20 @@ const handleUploadChange = ({ fileList: newFileList }) => {
     }
   };
 
+  // Đã có state productNamesInStock lấy từ kho
+
   const columns = [
     {
       title: "Tên sản phẩm",
       dataIndex: "name",
       key: "name",
       ...getColumnSearchProps("name", "tên sản phẩm"),
+    },
+    {
+      title: "Màu sắc",
+      dataIndex: "color",
+      key: "color",
+      render: (color) => color ? <Tag color="blue">{color}</Tag> : <Tag color="default">Không có</Tag>
     },
     {
       title: "Giá tiền",
@@ -287,7 +402,6 @@ const handleUploadChange = ({ fileList: newFileList }) => {
       sorter: (a, b) => (a.discount || 0) - (b.discount || 0),
       render: (discount) => (discount ? `${discount}%` : "Không có giảm giá"),
     },
-    { title: "Đánh giá", dataIndex: "rating", key: "rating", sorter: (a, b) => a.rating - b.rating },
     {
       title: "Trạng thái",
       dataIndex: "status",
@@ -304,7 +418,6 @@ const handleUploadChange = ({ fileList: newFileList }) => {
       dataIndex: "images",
       key: "images",
       render: (_, record) => {
-        // Ưu tiên lấy ảnh đầu tiên trong images, nếu không có thì lấy image
         let imgUrl = '';
         if (Array.isArray(record.images) && record.images.length > 0) {
           imgUrl = record.images[0];
@@ -335,9 +448,22 @@ const handleUploadChange = ({ fileList: newFileList }) => {
     {
       title: "Hành động",
       key: "actions",
+      align: "center",
       render: (_, record) => (
-        <Space>
-          <Button type="link" onClick={() => handleEditProduct(record)}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 12,
+          minHeight: 48,
+          height: '100%',
+        }}>
+          <Button
+            type="primary"
+            size="small"
+            style={{ minWidth: 80, fontWeight: 500, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => handleEditProduct(record)}
+          >
             Sửa
           </Button>
           <Popconfirm
@@ -347,26 +473,39 @@ const handleUploadChange = ({ fileList: newFileList }) => {
             cancelText="Không"
             okButtonProps={{ loading: actionLoading }}
           >
-            <Button type="link" danger disabled={actionLoading}>
+            <Button
+              type="default"
+              danger
+              size="small"
+              style={{ minWidth: 80, fontWeight: 500, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              disabled={actionLoading}
+            >
               Xóa
             </Button>
           </Popconfirm>
-          <Button icon={<EyeOutlined />} onClick={() => handleShowDetail(record)} />
-        </Space>
+          <Button
+            icon={<EyeOutlined />}
+            size="small"
+            style={{ minWidth: 40, height: 36, background: '#f5f5f5', border: '1px solid #d9d9d9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => handleShowDetail(record)}
+          />
+        </div>
       ),
     },
   ];
+
+  // Đóng modal chi tiết sản phẩm
+  const handleCloseDetail = () => {
+    setDetailProduct(null);
+  };
 
   return (
     <Card
       style={{ margin: 24, borderRadius: 16, boxShadow: '0 2px 12px #eee' }}
       bodyStyle={{ padding: 24 }}
       title={<span style={{ fontWeight: 700, fontSize: 22, color: '#1890ff' }}>Quản lý sản phẩm</span>}
-      extra={
-        <Button icon={<PlusOutlined />} type="primary" style={{ borderRadius: 8 }} onClick={() => setIsModalOpen(true)}>
-          Thêm sản phẩm
-        </Button>
-      }
+      // Không hiển thị nút Thêm sản phẩm
+      extra={null}
     >
       <Table
         columns={columns}
@@ -381,7 +520,7 @@ const handleUploadChange = ({ fileList: newFileList }) => {
         style={{ borderRadius: 12, overflow: 'hidden', background: '#fff' }}
       />
       <Modal
-        title={currentProduct?._id ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm mới"}
+        title={currentProduct?._id ? "Chỉnh sửa sản phẩm" : ""}
         open={isModalOpen}
         onCancel={closeModal}
         footer={null}
@@ -396,7 +535,7 @@ const handleUploadChange = ({ fileList: newFileList }) => {
           >
             <Select
               showSearch
-              placeholder="Chọn thương hiệu"
+              placeholder="Chọn hoặc nhập thương hiệu mới"
               options={brands && Array.isArray(brands) ? brands.map(b => ({ label: b.name, value: b.name })) : []}
               filterOption={(input, option) =>
                 option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -408,72 +547,38 @@ const handleUploadChange = ({ fileList: newFileList }) => {
               dropdownRender={menu => (
                 <>
                   {menu}
-                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+                  <div style={{ display: 'flex', flexWrap: 'nowrap', padding: 8 }}>
                     <Input
-                      value={newBrandInput}
-                      style={{ flex: 1, marginRight: 8 }}
-                      placeholder="Thêm thương hiệu mới"
-                      onChange={e => setNewBrandInput(e.target.value)}
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter') {
-                          const value = newBrandInput.trim();
-                          if (!value) return;
-                          // Kiểm tra trùng tên thương hiệu
-                          if (brands.some(b => b.name.toLowerCase() === value.toLowerCase())) {
-                            message.warning('Thương hiệu đã tồn tại!');
-                            return;
-                          }
+                      style={{ flex: 'auto' }}
+                      placeholder="Thêm thương hiệu mới và nhấn Enter"
+                      onPressEnter={async e => {
+                        const value = e.target.value.trim();
+                        if (value && !brands.some(b => b.name === value)) {
                           try {
-                            await BrandService.createBrand({ name: value });
-                            setNewBrandInput("");
-                            const resAll = await BrandService.getAllBrands();
-                            setBrands(resAll.data);
-                            setTimeout(() => {
-                              form.setFieldsValue({ brand: value });
-                            }, 100);
+                            await createBrand({ name: value });
+                            const res = await getAllBrands();
+                            setBrands(res.data || []);
+                            form.setFieldsValue({ brand: value });
                             message.success('Đã thêm thương hiệu mới!');
-                          } catch (err) {
-                            message.error('Không thể thêm thương hiệu mới!');
+                          } catch {
+                            message.error('Lỗi thêm thương hiệu!');
                           }
                         }
                       }}
                     />
-                    <Button
-                      type="primary"
-                      size="small"
-                      style={{ marginLeft: 4 }}
-                      onClick={async () => {
-                        const value = newBrandInput.trim();
-                        if (!value) return;
-                        if (brands.some(b => b.name.toLowerCase() === value.toLowerCase())) {
-                          message.warning('Thương hiệu đã tồn tại!');
-                          return;
-                        }
-                        try {
-                          await BrandService.createBrand({ name: value });
-                          setNewBrandInput("");
-                          const resAll = await BrandService.getAllBrands();
-                          setBrands(resAll.data);
-                          setTimeout(() => {
-                            form.setFieldsValue({ brand: value });
-                          }, 100);
-                          message.success('Đã thêm thương hiệu mới!');
-                        } catch (err) {
-                          message.error('Không thể thêm thương hiệu mới!');
-                        }
-                      }}
-                    >Thêm</Button>
                   </div>
                 </>
               )}
-            />
+            >
+            </Select>
           </Form.Item>
           <Form.Item
             name="name"
             label="Tên sản phẩm"
-            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm!" }]}
+            rules={[{ required: true, message: "Vui lòng chọn tên sản phẩm!" }]}
           >
-            <Input />
+            {/* Luôn disabled, chỉ cho phép sửa các trường khác */}
+            <Input disabled value={form.getFieldValue('name') || currentProduct?.name || ''} />
           </Form.Item>
           <Form.Item
             name="price"
@@ -509,13 +614,6 @@ const handleUploadChange = ({ fileList: newFileList }) => {
             />
           </Form.Item>
           <Form.Item
-            name="rating"
-            label="Đánh giá"
-            rules={[{ required: true, message: "Vui lòng nhập đánh giá!" }]}
-          >
-            <InputNumber min={0} max={5} style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item
             name="status"
             label="Trạng thái"
             rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
@@ -530,7 +628,6 @@ const handleUploadChange = ({ fileList: newFileList }) => {
               onChange={handleUploadChange}
               beforeUpload={handleBeforeUpload}
               multiple={true}
-              accept=".jpg,.jpeg,.png"
             >
               {fileList.length < 8 && (
                 <div>
@@ -540,56 +637,34 @@ const handleUploadChange = ({ fileList: newFileList }) => {
               )}
             </Upload>
           </Form.Item>
+          <Form.Item
+            name="colors"
+            label="Màu sắc (có thể chọn nhiều)"
+            rules={[{ required: false }]}
+          >
+            {/* Khi sửa, chỉ cho phép sửa đúng màu của dòng đó */}
+            <Select
+              mode="tags"
+              style={{ width: '100%' }}
+              placeholder="Nhập hoặc chọn màu sắc, ví dụ: Đỏ, Xanh, Đen..."
+              tokenSeparators={[',']}
+              allowClear
+              disabled={true}
+            />
+          </Form.Item>
           <Form.Item name="description" label="Mô tả">
             <Input.TextArea rows={4} />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={actionLoading}>
-              {currentProduct?._id ? "Cập nhật sản phẩm" : "Tạo sản phẩm mới"}
+            <Button type="primary" htmlType="submit" loading={actionLoading} style={{ width: 160 }}>
+              Cập nhật sản phẩm
             </Button>
           </Form.Item>
         </Form>
       </Modal>
-      {/* Modal xem chi tiết sản phẩm */}
-      <Modal
-        open={!!detailProduct}
-        onCancel={handleCloseDetail}
-        footer={null}
-        width={600}
-        title={detailProduct ? `Chi tiết sản phẩm ${detailProduct.name}` : ""}
-        centered
-        bodyStyle={{ borderRadius: 12, padding: 24 }}
-      >
-        {detailProduct && (
-          <div style={{ textAlign: "center" }}>
-            {(() => {
-              let imgUrl = '';
-              if (Array.isArray(detailProduct.images) && detailProduct.images.length > 0) {
-                imgUrl = detailProduct.images[0];
-              } else if (detailProduct.image) {
-                imgUrl = detailProduct.image;
-              }
-              if (!imgUrl) return <div>Không có ảnh</div>;
-              const isFullUrl = imgUrl.startsWith('http://') || imgUrl.startsWith('https://');
-              return (
-                <img
-                  src={isFullUrl ? imgUrl : `http://localhost:3001${imgUrl}`}
-                  alt="Sản phẩm"
-                  style={{ width: "100%", maxHeight: 350, objectFit: "cover", marginBottom: 16, borderRadius: 12, boxShadow: '0 2px 8px #eee' }}
-                  onError={e => { e.target.onerror = null; e.target.src = '/default-product.jpg'; }}
-                />
-              );
-            })()}
-            <div style={{ margin: '12px 0' }}><b>Giá tiền:</b> <Tag color="green">{Number(detailProduct.price).toLocaleString("vi-VN")} ₫</Tag></div>
-            <div><b>Giảm giá:</b> <Tag color="orange">{detailProduct.discount ? `${detailProduct.discount}%` : "Không có"}</Tag></div>
-            <div><b>Đánh giá:</b> <Tag color="gold">{detailProduct.rating}</Tag></div>
-            <div><b>Trạng thái:</b> <Badge color={statusOptions.find((option) => option.value === detailProduct.status)?.color} text={statusOptions.find((option) => option.value === detailProduct.status)?.label || "Không xác định"} /></div>
-            <div style={{ marginTop: 8 }}><b>Mô tả:</b> {detailProduct.description}</div>
-          </div>
-        )}
-      </Modal>
+      {/* Đã chuyển sang trang chi tiết sản phẩm, không dùng modal ở đây nữa */}
     </Card>
   );
-};
+}
 
 export default QuanLySanPham;

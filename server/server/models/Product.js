@@ -9,14 +9,15 @@ const ProductSchema = new Schema({
   },
   name: {
     type: String,
-    required: true
+    required: [true, 'Tên sản phẩm là bắt buộc']
   },
   category: {
     type: String,
     required: true
   },
   brand: {
-    type: String
+    type: String,
+    required: [true, 'Thương hiệu là bắt buộc']
   },
   price: {
     type: Number,
@@ -30,7 +31,8 @@ const ProductSchema = new Schema({
     default: 0
   },
   images: [{
-    type: String
+    type: String,
+    required: [true, 'Hình ảnh sản phẩm là bắt buộc']
   }],
   discount: {
     type: Number,
@@ -38,9 +40,13 @@ const ProductSchema = new Schema({
   },
   quantity: {
     type: Number,
+    required: [true, 'Số lượng là bắt buộc'],
     default: 0
   },
   features: [{
+    type: String
+  }],
+  colors: [{
     type: String
   }],
   status: {

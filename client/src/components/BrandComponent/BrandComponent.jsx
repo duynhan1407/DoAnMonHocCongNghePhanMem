@@ -1,86 +1,105 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Modal, Form, Input, Table, Popconfirm, message, Tag } from 'antd';
-import * as BrandService from '../../services/BrandService';
-
+import eventBus from '../../utils/eventBus';
+import { Card, Table, Tag, Button, Modal, Form, Input, message } from 'antd';
 import * as ProductService from '../../services/ProductService';
+import * as BrandService from '../../services/BrandService';
 
 const BrandComponent = () => {
   const [brands, setBrands] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingBrand, setEditingBrand] = useState(null);
-  const [form] = Form.useForm();
   const [products, setProducts] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+
+  const fetchBrands = async () => {
+    const res = await BrandService.getAllBrands();
+    if (res?.data) setBrands(res.data);
+  };
+
+
+  // Hàm cập nhật lại products khi có thay đổi (ví dụ đổi màu, đổi số lượng)
+  const updateBrandRows = async (productId) => {
+    try {
+      const res = await ProductService.getAllProducts();
+      if (res?.data) {
+        const inStockProducts = res.data.filter(p => (p.quantity || 0) > 0);
+        setProducts(inStockProducts);
+      }
+    } catch {}
+  };
 
   useEffect(() => {
-    // Lấy brands từ backend
-    const fetchBrands = async () => {
-      const res = await BrandService.getAllBrands();
-      if (res?.data) setBrands(res.data);
-    };
-    fetchBrands();
-    // Lấy products thực tế
+    // Lấy products thực tế, chỉ lấy sản phẩm còn hàng
     const fetchProducts = async () => {
       const res = await ProductService.getAllProducts();
-      if (res?.data) setProducts(res.data);
+      if (res?.data) {
+        const inStockProducts = res.data.filter(p => (p.quantity || 0) > 0);
+        setProducts(inStockProducts);
+      }
     };
     fetchProducts();
+    fetchBrands();
+    // Lắng nghe reloadProducts để tự động reload số lượng khi có sự kiện từ eventBus hoặc localStorage
+    const reloadHandler = () => {
+      fetchProducts();
+      fetchBrands();
+    };
+    eventBus.on('reloadProducts', reloadHandler);
+    const storageHandler = (e) => {
+      if (e.key === 'reloadProducts') {
+        fetchProducts();
+        fetchBrands();
+      }
+    };
+    window.addEventListener('storage', storageHandler);
+    // Cleanup khi unmount
+    return () => {
+      eventBus.off('reloadProducts', reloadHandler);
+      window.removeEventListener('storage', storageHandler);
+    };
   }, []);
 
-  const handleAdd = () => {
-    setEditingBrand(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (record) => {
-    setEditingBrand(record);
-    form.setFieldsValue(record);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id) => {
-    await BrandService.deleteBrand(id);
-    setBrands(brands.filter((b) => b._id !== id));
-    message.success('Đã xóa thương hiệu!');
-  };
-
-  const handleOk = async () => {
-    try {
-      const values = await form.validateFields();
-      const name = values.name.trim();
-      // Kiểm tra trùng tên thương hiệu (không phân biệt hoa thường)
-      if (!editingBrand && brands.some(b => b.name.toLowerCase() === name.toLowerCase())) {
-        message.warning('Thương hiệu đã tồn tại!');
-        return;
-      }
-      if (editingBrand) {
-        const res = await BrandService.updateBrand(editingBrand._id, values);
-        setBrands(brands.map((b) => (b._id === editingBrand._id ? res.data : b)));
-        message.success('Cập nhật thương hiệu thành công!');
+  // Tổng số lượng sản phẩm còn lại trong kho cho mỗi thương hiệu (không cộng dồn theo màu)
+  const getProductStock = (brandName) => {
+    // Lấy tất cả sản phẩm cùng tên, cùng brand, chỉ tính 1 lần cho mỗi màu
+    const filtered = products.filter((p) => p.brand === brandName);
+    // Nếu sản phẩm có nhiều màu, chia đều quantity cho số màu, mỗi màu là 1 sản phẩm riêng biệt
+    let total = 0;
+    filtered.forEach(p => {
+      if (Array.isArray(p.colors) && p.colors.length > 0) {
+        // Mỗi màu là 1 sản phẩm riêng biệt, chia đều quantity nếu cần
+        // Nếu nhập 1 sản phẩm 2 màu, quantity là tổng, mỗi màu là 1 sản phẩm riêng biệt với quantity đó
+        total += (p.quantity || 0) * p.colors.length;
       } else {
-        const res = await BrandService.createBrand(values);
-        // Sau khi thêm, reload lại danh sách brands từ backend để đảm bảo đồng bộ
-        const all = await BrandService.getAllBrands();
-        setBrands(all.data);
-        message.success('Thêm thương hiệu thành công!');
+        total += (p.quantity || 0);
       }
-      setIsModalOpen(false);
-      form.resetFields();
-    } catch (err) {
-      // Không làm gì, antd sẽ hiển thị lỗi validate
-    }
+    });
+    return total;
   };
 
-  const getProductCount = (brandName) =>
-    products.filter((p) => p.brand === brandName).length;
+  const getProductCount = (brandName) => {
+    // Đếm tổng số sản phẩm (mỗi màu là 1 sản phẩm riêng biệt)
+    const filtered = products.filter((p) => p.brand === brandName);
+    let count = 0;
+    filtered.forEach(p => {
+      if (Array.isArray(p.colors) && p.colors.length > 0) {
+        count += p.colors.length;
+      } else {
+        count += 1;
+      }
+    });
+    return count;
+  };
 
   const columns = [
     { title: 'Tên thương hiệu', dataIndex: 'name', key: 'name' },
     {
       title: 'Tổng số lượng sản phẩm trong kho',
-      dataIndex: 'quantity',
-      key: 'quantity',
-      render: (qty) => qty ?? 0
+      key: 'stock',
+      render: (_, record) => (
+        <Tag color={getProductStock(record.name) > 0 ? "green" : "red"}>
+          {getProductStock(record.name)}
+        </Tag>
+      ),
     },
     {
       title: 'Số lượng sản phẩm',
@@ -89,41 +108,29 @@ const BrandComponent = () => {
         <Tag color="blue">{getProductCount(record.name)}</Tag>
       ),
     },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_, record) => (
-        <>
-          <Button type="link" onClick={() => handleEdit(record)}>Sửa</Button>
-          <Popconfirm title="Xóa thương hiệu?" onConfirm={() => handleDelete(record._id)}>
-            <Button type="link" danger>Xóa</Button>
-          </Popconfirm>
-        </>
-      ),
-    },
   ];
 
+  const handleAddBrand = async () => {
+    try {
+      const values = await form.validateFields();
+      await BrandService.createBrand({ name: values.name });
+      message.success('Đã thêm thương hiệu mới!');
+      setIsModalOpen(false);
+      form.resetFields();
+      fetchBrands();
+    } catch (err) {
+      message.error('Lỗi thêm thương hiệu!');
+    }
+  };
+
   return (
-    <Card title="Quản lý thương hiệu" extra={<Button onClick={handleAdd}>Thêm thương hiệu</Button>} style={{ margin: 24 }}>
+    <Card title="Quản lý thương hiệu" style={{ margin: 24 }} extra={<Button type="primary" onClick={() => setIsModalOpen(true)}>Thêm thương hiệu</Button>}>
       <Table columns={columns} dataSource={brands} pagination={false} rowKey={record => record._id || record.name} />
-      <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleOk} title={editingBrand ? 'Sửa thương hiệu' : 'Thêm thương hiệu'}>
+      <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleAddBrand} title="Thêm thương hiệu mới">
         <Form form={form} layout="vertical">
-        <Form.Item
-          name="name"
-          label="Tên thương hiệu"
-          rules={[
-            { required: true, message: 'Nhập tên thương hiệu!' },
-            { validator: (_, value) => {
-                if (typeof value === 'string' && value.trim() === '') {
-                  return Promise.reject('Tên thương hiệu không được chỉ chứa khoảng trắng!');
-                }
-                return Promise.resolve();
-              }
-            }
-          ]}
-        >
-          <Input />
-        </Form.Item>
+          <Form.Item name="name" label="Tên thương hiệu" rules={[{ required: true, message: 'Nhập tên thương hiệu!' }]}> 
+            <Input />
+          </Form.Item>
         </Form>
       </Modal>
     </Card>

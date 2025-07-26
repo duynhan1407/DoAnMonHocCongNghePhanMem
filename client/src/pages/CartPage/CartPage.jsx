@@ -64,6 +64,19 @@ const CartPage = () => {
     localStorage.setItem('cart', JSON.stringify(newCart));
   };
 
+
+  // Thay đổi số lượng sản phẩm trong giỏ hàng
+  const handleChangeQuantity = (productId, newQty) => {
+    if (!productId || !newQty || newQty < 1) return;
+    const newCart = cart.map(item =>
+      (item._id === productId || item.id === productId)
+        ? { ...item, quantity: newQty }
+        : item
+    );
+    setCart(newCart);
+    localStorage.setItem('cart', JSON.stringify(newCart));
+  };
+
   // Đặt hàng và chuyển sang trang thanh toán cho toàn bộ sản phẩm trong giỏ hàng
   const handleDirectOrder = async () => {
     if (cart.length === 0) return;
@@ -108,6 +121,7 @@ const CartPage = () => {
           onRemove={handleRemoveFromCart}
           loading={loading}
           onCheckout={handleDirectOrder}
+          onChangeQuantity={handleChangeQuantity}
         />
         <button style={{ marginTop: 20, width: '100%' }} onClick={() => navigate('/')}>Tiếp tục mua sắm</button>
       </div>

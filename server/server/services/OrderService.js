@@ -237,16 +237,7 @@ const updateOrder = async (req, res) => {
       return res.status(404).json({ status: 'ERR', message: 'Order not found' });
     }
 
-    // Nếu trạng thái đơn hàng là 'delivered', cập nhật số lượng sản phẩm
-    if (status && status.toLowerCase() === 'delivered' && Array.isArray(updatedOrder.orderItems)) {
-      for (const item of updatedOrder.orderItems) {
-        const product = await Product.findById(item.productId._id || item.productId);
-        if (product) {
-          product.quantity = Math.max(0, (product.quantity || 0) - (item.quantity || 1));
-          await product.save();
-        }
-      }
-    }
+    // Đã bỏ logic trừ số lượng sản phẩm khi cập nhật trạng thái sang 'delivered'.
 
     return res.status(200).json({
       status: 'OK',
@@ -286,6 +277,16 @@ const payOrder = async (req, res) => {
     }
     if (order.isPaid) {
       return res.status(400).json({ status: 'ERR', message: 'Order is already paid' });
+    }
+    // Trừ số lượng sản phẩm trong kho khi thanh toán thành công
+    if (Array.isArray(order.orderItems)) {
+      for (const item of order.orderItems) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          product.quantity = Math.max(0, (product.quantity || 0) - (item.quantity || 1));
+          await product.save();
+        }
+      }
     }
     order.isPaid = true;
     order.paidAt = new Date();

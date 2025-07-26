@@ -1,6 +1,7 @@
 import React from 'react';
+import { InputNumber } from 'antd';
 
-const CartComponent = ({ cart, onCheckout, onRemove, loading }) => {
+const CartComponent = ({ cart, onCheckout, onRemove, loading, onChangeQuantity }) => {
   // Tính tổng tiền dựa trên số lượng và giá từng sản phẩm
   const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   return (
@@ -42,7 +43,17 @@ const CartComponent = ({ cart, onCheckout, onRemove, loading }) => {
                 <span style={{ fontSize: 16 }}>
                   <b>{item.name}</b> {item.brand && `- ${item.brand}`} - {
                     Number(item.price).toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + 'đ'
-                  } x {item.quantity || 1}
+                  }
+                  <span style={{ marginLeft: 12, marginRight: 8 }}>
+                    <InputNumber
+                      min={1}
+                      max={item.maxQuantity || 99}
+                      value={item.quantity || 1}
+                      onChange={val => onChangeQuantity && onChangeQuantity(item._id || item.id, val)}
+                      size="small"
+                      style={{ width: 60 }}
+                    />
+                  </span>
                 </span>
                 <button
                   style={{

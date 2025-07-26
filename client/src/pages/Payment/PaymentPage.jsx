@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import eventBus from '../../utils/eventBus';
 import { useSelector } from 'react-redux';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { message, Skeleton, Card, Button } from 'antd';
@@ -67,17 +68,29 @@ const PaymentPage = () => {
 
   // Xác nhận thanh toán đơn hàng (nếu đã có order)
   const handleConfirmPayment = async () => {
+    if (!orderId) {
+      message.error('Không tìm thấy đơn hàng để thanh toán.');
+      return;
+    }
     setPaying(true);
     try {
       const access_token = localStorage.getItem('access_token');
-      await OrderService.updateOrder(orderId, { isPaid: true }, access_token);
-      message.success({
-        content: 'Thanh toán thành công! Cảm ơn bạn đã mua hàng.',
-        duration: 3,
-      });
-      fetchOrderDetail();
+      // Gọi đúng API payOrder để backend trừ số lượng sản phẩm
+      const res = await OrderService.payOrder(orderId, { paymentMethod: 'COD' }, access_token);
+      if (res?.data?.isPaid || res?.data?.status === 'OK') {
+        message.success({
+          content: 'Thanh toán thành công! Cảm ơn bạn đã mua hàng.',
+          duration: 3,
+        });
+        eventBus.emit('reloadProducts');
+        localStorage.setItem('reloadProducts', Date.now().toString());
+        fetchOrderDetail();
+      } else {
+        message.error('Thanh toán thất bại hoặc trạng thái đơn hàng không hợp lệ!');
+      }
     } catch (error) {
-      message.error('Thanh toán thất bại!');
+      const errMsg = error?.response?.data?.message || error.message || 'Thanh toán thất bại!';
+      message.error(`Thanh toán thất bại! ${errMsg}`);
     } finally {
       setPaying(false);
     }
@@ -232,6 +245,7 @@ const PaymentPage = () => {
       </header>
 
       <Card style={styles.column} title="Thông tin Đơn hàng">
+        <p><strong>Mã đơn hàng:</strong> {order?.orderCode || order?.code || order?.maDon || 'N/A'}</p>
         <p><strong>Khách hàng:</strong> {order?.user?.name || 'N/A'}</p>
         <p><strong>Email:</strong> {order?.user?.email || 'N/A'}</p>
         <p><strong>Số điện thoại:</strong> {order?.user?.phone || order?.phone || 'N/A'}</p>
@@ -241,15 +255,18 @@ const PaymentPage = () => {
         {/* Hiển thị hình ảnh sản phẩm dưới cùng */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 24, justifyContent: 'flex-start' }}>
           {order?.orderItems?.map((item, idx) => {
-            const img = item?.productId?.images?.[0];
-            return img ? (
+            let img = item?.productId?.images?.[0];
+            // Nếu không có ảnh thì dùng ảnh mặc định
+            if (!img) img = '/default-product.jpg';
+            return (
               <img
                 key={idx}
                 src={img}
                 alt={item.name}
                 style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                onError={e => { e.target.onerror = null; e.target.src = '/default-product.jpg'; }}
               />
-            ) : null;
+            );
           })}
         </div>
       </Card>
@@ -257,18 +274,7 @@ const PaymentPage = () => {
       <Card style={styles.column} title="Thanh toán">
         <p><strong>Trạng thái thanh toán:</strong> {order?.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}</p>
         <p><strong>Phương thức thanh toán:</strong> {order?.paymentMethod || 'Không có'}</p>
-
-        <Button
-          type="primary"
-          style={styles.confirmButton}
-          loading={paying}
-          onMouseOver={e => (e.target.style.backgroundColor = styles.confirmButtonHover.backgroundColor)}
-          onMouseOut={e => (e.target.style.backgroundColor = styles.confirmButton.backgroundColor)}
-          onClick={handleConfirmPayment}
-          disabled={!order}
-        >
-          Xác nhận Thanh toán
-        </Button>
+        {/* Nút xác nhận thanh toán đã bị xóa bỏ theo yêu cầu */}
       </Card>
     </div>
   );

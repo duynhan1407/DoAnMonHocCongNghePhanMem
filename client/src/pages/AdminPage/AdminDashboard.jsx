@@ -30,7 +30,9 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchStats(dateRange[0], dateRange[1]);
+    const start = Array.isArray(dateRange) && dateRange[0] ? dateRange[0] : undefined;
+    const end = Array.isArray(dateRange) && dateRange[1] ? dateRange[1] : undefined;
+    fetchStats(start, end);
   }, [dateRange]);
 
   const columns = [
@@ -74,7 +76,7 @@ const AdminDashboard = () => {
         )}
         <Table
           columns={columns}
-          dataSource={stats?.dailyStats || []}
+          dataSource={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []}
           rowKey="date"
           loading={loading}
           pagination={false}

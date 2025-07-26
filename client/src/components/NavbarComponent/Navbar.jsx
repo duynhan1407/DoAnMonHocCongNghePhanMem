@@ -1,20 +1,16 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser } from '../../redux/Slide/userSlide';
-import { UserOutlined, ShoppingCartOutlined, HomeOutlined, LoginOutlined, UserAddOutlined, LogoutOutlined, DownOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Dropdown, Menu } from 'antd';
+import { DownOutlined, HeartFilled } from '@ant-design/icons';
 import * as ProductService from '../../services/ProductService';
+import * as BrandService from '../../services/BrandService';
 
 const Navbar = () => {
-  const user = useSelector((state) => state.user);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  // State for product categories
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
 
   useEffect(() => {
     // Fetch all products and extract unique categories
@@ -24,16 +20,21 @@ const Navbar = () => {
         setCategories(cats);
       }
     });
+    // Fetch all brands
+    BrandService.getAllBrands().then(res => {
+      if (res?.data) {
+        setBrands(res.data.map(b => b.name));
+      }
+    });
   }, []);
-
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    navigate('/sign-in');
-  };
 
   // Handler for selecting a category
   const handleCategorySelect = (cat) => {
     navigate(`/?category=${encodeURIComponent(cat)}`);
+  };
+  // Handler for selecting a brand
+  const handleBrandSelect = (brand) => {
+    navigate(`/?brand=${encodeURIComponent(brand)}`);
   };
 
   return (
@@ -59,28 +60,33 @@ const Navbar = () => {
     >
       <div style={{ fontWeight: 800, fontSize: 28, color: '#fff', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
         <Link to="/" style={{ color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 30 }}>570</span>
+          <span style={{ fontSize: 30 }}>570</span>
           <span style={{ fontWeight: 800, fontSize: 26, letterSpacing: 1 }}>MyWatch</span>
         </Link>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-        <Link to="/" style={{
-          color: '#fff',
-          fontWeight: 600,
-          fontSize: 18,
-          textDecoration: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 14px',
-          borderRadius: 8,
-          transition: 'background 0.18s',
-        }}
-          onMouseOver={e => e.currentTarget.style.background = '#00bfae44'}
+        {/* Mục yêu thích */}
+        <span
+          style={{
+            color: '#ff4d4f',
+            fontWeight: 600,
+            fontSize: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 14px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            transition: 'background 0.18s',
+          }}
+          onClick={() => navigate('/favorite')}
+          onMouseOver={e => e.currentTarget.style.background = '#ff4d4f22'}
           onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+          title="Mục yêu thích"
         >
-          <HomeOutlined /> Trang chủ
-        </Link>
+          <HeartFilled style={{ color: '#ff4d4f', fontSize: 22 }} />
+          <span style={{ fontSize: 17, color: '#fff', fontWeight: 600 }}>Yêu thích</span>
+        </span>
         <Dropdown
           overlay={
             <Menu>
@@ -115,93 +121,40 @@ const Navbar = () => {
             <DownOutlined /> Danh mục
           </span>
         </Dropdown>
-        <Link to="/cart" style={{
-          color: '#fff',
-          fontWeight: 600,
-          fontSize: 18,
-          textDecoration: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 14px',
-          borderRadius: 8,
-          transition: 'background 0.18s',
-        }}
-          onMouseOver={e => e.currentTarget.style.background = '#00bfae44'}
-          onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+        <Dropdown
+          overlay={
+            <Menu>
+              {brands.length === 0 ? (
+                <Menu.Item disabled>Đang tải...</Menu.Item>
+              ) : (
+                brands.map(brand => (
+                  <Menu.Item key={brand} onClick={() => handleBrandSelect(brand)}>
+                    {brand}
+                  </Menu.Item>
+                ))
+              )}
+            </Menu>
+          }
         >
-          <ShoppingCartOutlined /> Giỏ hàng
-        </Link>
-        {user?.access_token ? (
-          <>
-            {user.avatar && (
-              <img src={user.avatar} alt="avatar" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', boxShadow: '0 2px 8px #00bfae44', marginRight: 8 }} />
-            )}
-            <span style={{ color: '#fff', fontWeight: 600, fontSize: 18, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <UserOutlined /> {user.name || user.email || 'User'}
-            </span>
-            <button
-              onClick={handleLogout}
-              style={{
-                background: 'linear-gradient(90deg, #e53935 0%, #ff9800 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                padding: '7px 18px',
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: 'pointer',
-                marginLeft: 8,
-                boxShadow: '0 2px 8px #e0e7ff',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'background 0.18s',
-              }}
-              onMouseOver={e => e.currentTarget.style.background = '#e53935'}
-              onMouseOut={e => e.currentTarget.style.background = 'linear-gradient(90deg, #e53935 0%, #ff9800 100%)'}
-            >
-              <LogoutOutlined /> Đăng xuất
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/sign-in" style={{
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 18,
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              borderRadius: 8,
-              transition: 'background 0.18s',
-            }}
-              onMouseOver={e => e.currentTarget.style.background = '#00bfae44'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <LoginOutlined /> Đăng nhập
-            </Link>
-            <Link to="/sign-up" style={{
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 18,
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              borderRadius: 8,
-              transition: 'background 0.18s',
-            }}
-              onMouseOver={e => e.currentTarget.style.background = '#00bfae44'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <UserAddOutlined /> Đăng ký
-            </Link>
-          </>
-        )}
+          <span style={{
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: 18,
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 14px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            transition: 'background 0.18s',
+          }}
+            onMouseOver={e => e.currentTarget.style.background = '#00bfae44'}
+            onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <DownOutlined /> Thương hiệu
+          </span>
+        </Dropdown>
       </div>
     </nav>
   );

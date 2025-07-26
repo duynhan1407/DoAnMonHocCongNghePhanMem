@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useQuery } from '@tanstack/react-query';
 import { message, Modal, Input } from 'antd';
 import CardComponent from '../../components/CardComponent/CardComponent';
@@ -18,6 +18,19 @@ const HomePage = () => {
     navigate(`/product-detail/${productId}`);
   };
   const user = useSelector((state) => state.user);
+  const favorite = useSelector((state) => state.favorite.items);
+  const dispatch = useDispatch();
+  // Thêm/xóa mục yêu thích
+  const isFavorite = (productId) => favorite.some(item => item._id === productId);
+  const handleToggleFavorite = (product) => {
+    if (isFavorite(product._id)) {
+      dispatch({ type: 'favorite/removeFromFavorite', payload: product._id });
+      message.info('Đã xóa khỏi mục yêu thích!');
+    } else {
+      dispatch({ type: 'favorite/addToFavorite', payload: product });
+      message.success('Đã thêm vào mục yêu thích!');
+    }
+  };
   const [cart, setCart] = useState(() => {
     const stored = localStorage.getItem('cart');
     return stored ? JSON.parse(stored) : [];
@@ -124,23 +137,7 @@ const HomePage = () => {
         boxShadow: '0 4px 32px rgba(0,0,0,0.07)',
         marginTop: 40,
       }}>
-        <h1 style={{
-          fontSize: '2.2rem',
-          fontWeight: 800,
-          color: '#2563eb',
-          textAlign: 'center',
-          marginBottom: 32,
-          letterSpacing: 1,
-        }}>Khám phá bộ sưu tập đồng hồ</h1>
-        <div style={{ maxWidth: 400, margin: '0 auto 24px auto' }}>
-          <Input.Search
-            placeholder="Tìm kiếm theo tên, thương hiệu, danh mục..."
-            allowClear
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            style={{ width: '100%', borderRadius: 8, fontSize: 16 }}
-          />
-        </div>
+        {/* Đã loại bỏ tiêu đề và ô tìm kiếm */}
         <WrapperProducts>
           {filteredProducts.map((product) => (
             <HomeResponsiveCard key={product._id} style={{
@@ -148,69 +145,69 @@ const HomePage = () => {
               minWidth: 270,
               maxWidth: 320,
               flex: '1 1 300px',
-              margin: '12px 8px',
-              background: '#f8fafc',
-              borderRadius: 16,
-              boxShadow: '0 2px 12px #e0e7ff',
+              margin: '24px 12px',
+              background: '#fff',
+              borderRadius: 10,
+              boxShadow: 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              padding: '32px 0 18px 0',
+              border: '1px solid #eee',
               transition: 'box-shadow 0.2s',
             }}>
-              <CardComponent
-                name={product.name}
-                price={`${product.price.toLocaleString('vi-VN')} đ`}
-                rating={product.rating || 0}
-                image={product.images?.[0] || product.image}
-                brand={product.brand}
-                condition={product.status || 'Available'}
-                discount={product.discount}
-              />
-              <div className="product-actions" style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                width: '90%',
-                margin: '0 auto 12px auto',
-                gap: 10,
-              }}>
-                <button
-                  style={{
-                    flex: '1 1 0',
-                    background: '#00bfae',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '8px 0',
-                    fontWeight: 600,
-                    fontSize: '1rem',
-                    marginTop: 8,
-                    cursor: 'pointer',
-                    transition: 'background 0.18s, box-shadow 0.18s',
-                    boxShadow: '0 1px 6px #e0e7ff',
-                  }}
-                  onClick={() => handleAddToCart(product)}
-                >
-                  Thêm vào giỏ
-                </button>
-                <button
-                  style={{
-                    flex: '1 1 0',
-                    background: '#ff9800',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '8px 0',
-                    fontWeight: 600,
-                    fontSize: '1rem',
-                    marginTop: 8,
-                    cursor: 'pointer',
-                    transition: 'background 0.18s, box-shadow 0.18s',
-                    boxShadow: '0 1px 6px #e0e7ff',
-                  }}
-                  onClick={() => handleProductClick(product._id)}
-                >
-                  Xem chi tiết
-                </button>
+              {/* Label MỚI góc trên trái */}
+              <div style={{
+                position: 'absolute',
+                top: 16,
+                left: 16,
+                background: 'transparent',
+                color: '#222',
+                fontWeight: 700,
+                fontSize: 15,
+                borderRadius: 0,
+                padding: 0,
+                zIndex: 2,
+                letterSpacing: 0.5,
+              }}>MỚI</div>
+              {/* Icon yêu thích góc trên phải */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 16,
+                  background: 'transparent',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 2,
+                  cursor: 'pointer',
+                }}
+                onClick={() => handleToggleFavorite(product)}
+                title={isFavorite(product._id) ? 'Bỏ khỏi mục yêu thích' : 'Thêm vào mục yêu thích'}
+              >
+                <span style={{ color: isFavorite(product._id) ? '#222' : '#bbb', fontSize: 22, fontWeight: 700 }}>
+                  {isFavorite(product._id) ? '\u2665' : '\u2661'}
+                </span>
+              </div>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', marginTop: 18 }} onClick={() => handleProductClick(product._id)}>
+                <img
+                  src={
+                    Array.isArray(product.images) && product.images.length > 0 && typeof product.images[0] === 'string' && product.images[0].trim() !== ''
+                      ? product.images[0]
+                      : '/default-product.jpg'
+                  }
+                  alt={product.name}
+                  style={{ width: 180, height: 180, objectFit: 'contain', marginBottom: 18, background: '#fff', borderRadius: 0, boxShadow: 'none' }}
+                  onError={e => { e.target.onerror = null; e.target.src = '/default-product.jpg'; }}
+                />
+                {/* Brand */}
+                <div style={{ color: '#222', fontSize: 13, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>{product.brand}</div>
+                {/* Name */}
+                <div style={{ color: '#111', fontWeight: 700, fontSize: 19, marginBottom: 0, textAlign: 'left', width: '100%', minHeight: 24 }}>{product.name}</div>
               </div>
             </HomeResponsiveCard>
           ))}

@@ -1,102 +1,66 @@
-import React from "react";
-import { Card, Tag } from "antd";
-import { StarFilled } from "@ant-design/icons";
-import {
-  StyleNameProduct,
-  WrapperDiscount,
-  WrapperPrice,
-  WrapperReport,
-} from "./style";
+
+import React from 'react';
+import { Card, Tag } from 'antd';
 
 const CardComponent = ({
-  name = "N/A",
-  price = null,
-  rating = 0,
-  image = "",
-  brand = "",
-  condition = "Unavailable",
-  discount = null,
+  name,
+  brand,
+  price,
+  discount,
+  image,
+  colors,
+  status,
+  children
 }) => {
-  const getFullImageUrl = (img) => {
-    if (!img) return "/assets/images/no-image.png";
-    if (img.startsWith("http")) return img;
-    return `http://localhost:3001${img}`;
-  };
-
-  const fullImageUrl = getFullImageUrl(image);
-
-  // Xác định màu sắc theo trạng thái sản phẩm
-  const getConditionColor = (condition) => {
-    switch (condition) {
-      case "Available":
-        return "green";
-      case "OutOfStock":
-        return "volcano";
-      default:
-        return "gray";
-    }
-  };
-
-  // Xác định nhãn hiển thị cho trạng thái sản phẩm
-  const getConditionLabel = (condition) => {
-    switch (condition) {
-      case "Available":
-        return "Còn hàng";
-      case "OutOfStock":
-        return "Hết hàng";
-      default:
-        return "Không xác định";
-    }
-  };
+  const fullImageUrl = image && (image.startsWith('http://') || image.startsWith('https://'))
+    ? image
+    : image ? `http://localhost:3001${image}` : '/default-product.jpg';
 
   return (
     <Card
       hoverable
       style={{
-        width: 240,
-        border: "1px solid #f0f0f0",
-        borderRadius: "8px",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        width: 260,
+        border: '1px solid #e0e7ff',
+        borderRadius: 16,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        boxShadow: '0 2px 12px #e0e7ff',
+        margin: '0 auto',
+        background: '#f8fafc',
       }}
+      bodyStyle={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       cover={
         <img
           alt={name}
           src={fullImageUrl}
-          onError={(e) => {
-            if (!e.target.src.includes('no-image.png')) {
-              e.target.onerror = null;
-              e.target.src = "/assets/images/no-image.png";
-            }
-          }}
-          style={{
-            height: 150,
-            objectFit: "cover",
-            borderBottom: "1px solid #f0f0f0",
-          }}
+          onError={e => { e.target.onerror = null; e.target.src = '/default-product.jpg'; }}
+          style={{ height: 170, objectFit: 'cover', borderBottom: '1px solid #e0e7ff', borderRadius: '16px 16px 0 0' }}
         />
       }
     >
-      <StyleNameProduct>{name} {brand && `(${brand})`}</StyleNameProduct>
-
-      <WrapperReport>
-        <span style={{ marginRight: "4px" }}>
-          <span>{rating.toFixed(1)}</span>
-          <StarFilled style={{ fontSize: "16px", color: "#FFD700", marginLeft: "4px" }} />
-        </span>
-        <Tag color={getConditionColor(condition)}>
-          {getConditionLabel(condition)}
-        </Tag>
-      </WrapperReport>
-
-      <div style={{ marginTop: "8px" }}>
-        <WrapperPrice>
-          {price ? `${price.toLocaleString()} ₫` : "N/A"}
-          {discount && <WrapperDiscount>-{discount}%</WrapperDiscount>}
-        </WrapperPrice>
+      <div style={{ fontWeight: 700, fontSize: 18, textAlign: 'center', margin: '8px 0 4px 0', color: '#2563eb' }}>
+        {name} {brand && `(${brand})`}
       </div>
+      <div style={{ margin: '8px 0' }}>
+        <span style={{ fontSize: 18, color: '#00bfae', fontWeight: 700 }}>
+          {price === undefined || price === null || price === ''
+            ? 'N/A'
+            : (typeof price === 'number'
+                ? `${price.toLocaleString('vi-VN')} ₫`
+                : price)}
+        </span>
+        {discount && <span style={{ marginLeft: 8, color: '#ff9800' }}>-{discount}%</span>}
+      </div>
+      {Array.isArray(colors) && colors.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          {colors.map((color, idx) => <Tag color="blue" key={idx}>{color}</Tag>)}
+        </div>
+      )}
+      {status && <Tag color={status === 'Available' ? 'green' : 'red'}>{status === 'Available' ? 'Còn hàng' : 'Hết hàng'}</Tag>}
+      {children && <div style={{ width: '100%', marginTop: 8 }}>{children}</div>}
     </Card>
   );
 };

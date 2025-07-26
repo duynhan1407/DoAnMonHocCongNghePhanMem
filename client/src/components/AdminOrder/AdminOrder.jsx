@@ -151,12 +151,30 @@ const AdminOrder = () => {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status) => {
+      render: (status, record) => {
         let color = 'default', text = 'Chờ xác nhận';
         if (status === 'Delivered') { color = 'green'; text = 'Đã giao'; }
         else if (status === 'Cancelled') { color = 'red'; text = 'Đã hủy'; }
         else if (status === 'Pending') { color = 'gold'; text = 'Chờ xác nhận'; }
-        return <Tag color={color}>{text}</Tag>;
+        return (
+          <Select
+            value={status}
+            style={{ minWidth: 120 }}
+            onChange={async (value) => {
+              try {
+                await OrderService.updateOrder(record._id, { status: value });
+                message.success('Cập nhật trạng thái thành công!');
+                fetchOrders();
+              } catch (err) {
+                message.error('Cập nhật trạng thái thất bại!');
+              }
+            }}
+          >
+            <Select.Option value="Pending">Chờ xác nhận</Select.Option>
+            <Select.Option value="Delivered">Đã giao</Select.Option>
+            <Select.Option value="Cancelled">Đã hủy</Select.Option>
+          </Select>
+        );
       }
     },
     {
