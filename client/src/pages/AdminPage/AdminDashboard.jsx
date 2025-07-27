@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { Table, Card, Statistic, Row, Col, DatePicker, Button, message } from 'antd';
+import RevenueChart from '../../components/RevenueChart';
 import moment from 'moment';
 
 const AdminDashboard = () => {
@@ -74,6 +75,10 @@ const AdminDashboard = () => {
             </Col>
           </Row>
         )}
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ marginBottom: 12 }}>Biểu đồ doanh thu theo ngày</h3>
+          <RevenueChart data={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []} />
+        </div>
         <Table
           columns={columns}
           dataSource={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []}

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@ant-design/charts": "^2.6.1",
     "@ant-design/icons": "^6.0.0",
     "@payos/node": "^1.0.10",
     "cloudinary": "^2.5.1",
