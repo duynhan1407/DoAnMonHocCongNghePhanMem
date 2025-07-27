@@ -78,6 +78,7 @@ const OrdersPage = () => {
               <th style={{ padding: 10, border: '1px solid #ccc' }}>Sản phẩm</th>
               <th style={{ padding: 10, border: '1px solid #ccc' }}>Tổng tiền</th>
               <th style={{ padding: 10, border: '1px solid #ccc' }}>Trạng thái</th>
+              <th style={{ padding: 10, border: '1px solid #ccc' }}>Thanh toán</th>
               <th style={{ padding: 10, border: '1px solid #ccc' }}>Ngày tạo</th>
               <th style={{ padding: 10, border: '1px solid #ccc' }}>Thao tác</th>
             </tr>
@@ -94,6 +95,9 @@ const OrdersPage = () => {
                   </Tag>
                 </td>
                 <td style={{ padding: 10, border: '1px solid #ccc', textAlign: 'center' }}>{o.createdAt && new Date(o.createdAt).toLocaleString()}</td>
+                <td style={{ padding: 10, border: '1px solid #ccc', textAlign: 'center' }}>
+                  <Tag color={o.isPaid ? 'green' : 'red'}>{o.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}</Tag>
+                </td>
                 <td style={{ padding: 10, border: '1px solid #ccc', textAlign: 'center' }}>
                   <Button size="small" onClick={() => { setDetailOrder(o); setDetailModal(true); }}>Xem</Button>
                 </td>
@@ -118,6 +122,9 @@ const OrdersPage = () => {
               <Tag color={detailOrder.status === 'Delivered' ? 'green' : detailOrder.status === 'Cancelled' ? 'red' : 'gold'}>
                 {detailOrder.status === 'Delivered' ? 'Đã giao' : detailOrder.status === 'Cancelled' ? 'Đã hủy' : 'Chờ xác nhận'}
               </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Thanh toán">
+              <Tag color={detailOrder.isPaid ? 'green' : 'red'}>{detailOrder.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">{detailOrder.createdAt && new Date(detailOrder.createdAt).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="Ghi chú">{detailOrder.notes || '-'}</Descriptions.Item>

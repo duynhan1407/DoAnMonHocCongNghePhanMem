@@ -40,6 +40,8 @@ function QuanLySanPham() {
 
   // Trạng thái đơn hàng mới
   const statusOptions = [
+    { label: "Còn hàng", value: "Available", color: "green" },
+    { label: "Hết hàng", value: "OutOfStock", color: "red" },
     { label: "Đang xác nhận", value: "confirming", color: "orange" },
     { label: "Đang giao hàng", value: "shipping", color: "blue" },
     { label: "Đã giao hàng", value: "delivered", color: "green" },
@@ -62,15 +64,35 @@ function QuanLySanPham() {
     try {
       const response = await getAllProducts(params);
       if (response?.data && Array.isArray(response.data)) {
+        // Tự động cập nhật trạng thái sản phẩm dựa vào số lượng
+        await Promise.all(response.data.map(async (product) => {
+          let newStatus = 'OutOfStock';
+          if (Array.isArray(product.colors) && product.colors.length > 0) {
+            // Nếu có màu, kiểm tra quantity của từng màu
+            const hasStock = product.colors.some(c => typeof c.quantity === 'number' && c.quantity > 0);
+            newStatus = hasStock ? 'Available' : 'OutOfStock';
+          } else {
+            newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
+          }
+          if (product.status !== newStatus) {
+            await updateProduct(product._id, { status: newStatus });
+            product.status = newStatus;
+          }
+        }));
         // Tách mỗi màu thành 1 dòng riêng biệt
         const productList = [];
         response.data.forEach(product => {
           if (Array.isArray(product.colors) && product.colors.length > 0) {
-            product.colors.forEach((color) => {
+            product.colors.forEach((colorObj) => {
               productList.push({
                 ...product,
-                color,
-                key: `${product._id}-${color}`,
+                color: colorObj.color,
+                images: colorObj.images,
+                price: colorObj.price,
+                description: colorObj.description,
+                key: `${product._id}-${colorObj.color}`,
+                quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0,
+                rating: typeof colorObj.rating === 'number' ? colorObj.rating : 0 // rating từng màu
               });
             });
           } else {
@@ -78,6 +100,8 @@ function QuanLySanPham() {
               ...product,
               color: null,
               key: `${product._id}-no-color`,
+              quantity: typeof product.quantity === 'number' ? product.quantity : 0,
+              rating: typeof product.rating === 'number' ? product.rating : 0
             });
           }
         });
@@ -263,7 +287,30 @@ function QuanLySanPham() {
           productData.image = productData.images[0];
         }
       }
+      // Chỉ cập nhật đúng màu đang chọn, không ghi đè toàn bộ mảng colors
+      if (Array.isArray(currentProduct.colors) && currentProduct.colors.length > 0 && currentProduct.color) {
+        // Tìm index màu đang chọn
+        const idx = currentProduct.colors.findIndex(c => c.color === currentProduct.color);
+        if (idx > -1) {
+          // Tạo bản sao mảng colors, chỉ cập nhật đúng màu đang chọn
+          const newColors = currentProduct.colors.map((c, i) => {
+            if (i === idx) {
+              return {
+                ...c,
+                images: productData.images,
+                price: productData.price,
+                description: productData.description,
+                quantity: typeof productData.quantity === 'number' ? productData.quantity : c.quantity
+              };
+            }
+            return c;
+          });
+          productData.colors = newColors;
+        }
+      }
       await updateProduct(currentProduct._id, productData);
+      // Luôn reload lại danh sách sản phẩm từ backend để đồng bộ dữ liệu
+      fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
       message.success("Cập nhật sản phẩm thành công!");
       // Cập nhật lại chỉ dòng sản phẩm vừa sửa, giữ lại các dòng khác màu
       const updatedRes = await getAllProducts({ _id: currentProduct._id });
@@ -274,8 +321,11 @@ function QuanLySanPham() {
         if (Array.isArray(updatedProduct.colors) && updatedProduct.colors.length > 0) {
           updatedRows = updatedProduct.colors.map((color) => ({
             ...updatedProduct,
-            color,
-            key: `${updatedProduct._id}-${color}`,
+            color: color.color,
+            images: color.images,
+            price: color.price,
+            description: color.description,
+            key: `${updatedProduct._id}-${color.color}`,
           }));
         } else {
           updatedRows = [{
@@ -353,14 +403,37 @@ function QuanLySanPham() {
     }
     setFileList(imagesArr);
     setIsModalOpen(true);
-    // Khi sửa, chỉ lấy đúng màu của dòng sản phẩm đang sửa
-    form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [] });
+    // Khi sửa, chỉ cho phép sửa đúng màu của dòng đó, không ảnh hưởng màu khác
+    if (record._id) {
+      form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [] });
+    } else {
+      form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [] });
+    }
   };
 
   const handleDeleteProduct = async (id) => {
     setActionLoading(true);
     try {
-      await deleteProduct(id);
+      // Nếu đang hiển thị theo màu, chỉ xóa màu đó khỏi mảng colors
+      const product = products.find(p => p._id === id);
+      if (product && product.color) {
+        // Lấy sản phẩm gốc từ backend
+        const res = await getAllProducts({ _id: id });
+        const fullProduct = res?.data?.[0];
+        if (fullProduct && Array.isArray(fullProduct.colors)) {
+          const newColors = fullProduct.colors.filter(c => c.color !== product.color);
+          if (newColors.length === 0) {
+            // Nếu không còn màu nào, xóa toàn bộ sản phẩm
+            await deleteProduct(id);
+          } else {
+            // Nếu còn màu, cập nhật lại mảng colors
+            await updateProduct(id, { colors: newColors });
+          }
+        }
+      } else {
+        // Nếu không có màu, xóa toàn bộ sản phẩm
+        await deleteProduct(id);
+      }
       message.success("Xóa sản phẩm thành công!");
       fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
     } catch (error) {
@@ -613,13 +686,7 @@ function QuanLySanPham() {
               allowClear
             />
           </Form.Item>
-          <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true, message: "Vui lòng chọn trạng thái!" }]}
-          >
-            <Select options={statusOptions} />
-          </Form.Item>
+          {/* Trạng thái sản phẩm sẽ tự động cập nhật theo số lượng, không cho phép chỉnh sửa ở đây */}
           <Form.Item name="images" label="Hình ảnh sản phẩm">
             <Upload
               action="http://localhost:3001/api/upload"

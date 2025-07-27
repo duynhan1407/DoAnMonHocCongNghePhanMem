@@ -1,9 +1,3 @@
-// Ẩn cảnh báo util._extend bị deprecate
-process.on('warning', e => {
-  if (!String(e.message).includes('util._extend')) {
-    console.warn(e);
-  }
-});
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -16,6 +10,14 @@ const routes = require('./routes');
 const paymentRoutes = require('./routes/PaymentRoutes');
 const cartRoutes = require('./routes/CartRoutes');
 const authRoutes = require('./routes/authRoutes');
+const orderApi = require('./routes/orderApi');
+// Ẩn cảnh báo util._extend bị deprecate
+process.on('warning', e => {
+  if (!String(e.message).includes('util._extend')) {
+    console.warn(e);
+  }
+});
+// ...existing code...
 const reviewRoutes = require('./routes/reviewRoutes');
 require('./services/reminderCron');
 
@@ -42,6 +44,8 @@ app.use(passport.session());
 // Routes chính
 routes(app);
 
+// Route đơn hàng
+app.use('/api/orders', orderApi);
 // Route thanh toán
 app.use('/api/payment', paymentRoutes);
 

@@ -23,8 +23,14 @@ const CartPage = () => {
   const dispatch = useDispatch();
   const [cart, setCart] = useState(() => {
     const stored = localStorage.getItem('cart');
-    if (stored) return JSON.parse(stored);
-    return location.state?.cart || [];
+    let initialCart = [];
+    if (stored) {
+      initialCart = JSON.parse(stored);
+    } else if (location.state?.cart) {
+      initialCart = location.state.cart;
+    }
+    // Ensure every item has productId
+    return initialCart.map(item => ({ ...item, productId: item.productId || item._id }));
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -80,8 +86,9 @@ const CartPage = () => {
   // Đặt hàng và chuyển sang trang thanh toán cho toàn bộ sản phẩm trong giỏ hàng
   const handleDirectOrder = async () => {
     if (cart.length === 0) return;
-    // Chỉ chuyển hướng sang trang thanh toán, truyền cart qua state
-    navigate('/payment', { state: { cart } });
+    // Ensure every item has productId before passing to payment
+    const cartWithProductId = cart.map(item => ({ ...item, productId: item.productId || item._id }));
+    navigate('/order-info', { state: { cart: cartWithProductId } });
   };
 
   // Đã bỏ chức năng thanh toán VNPay

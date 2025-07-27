@@ -19,15 +19,29 @@ const AdminStockManager = () => {
   const handleAddProduct = async () => {
     try {
       const values = await addForm.validateFields();
-      await ProductService.createProduct({
+      // Map colors to array of objects for new schema, khởi tạo quantity cho từng màu
+      let colorsArr = [];
+      let payload = {
         name: values.name,
         brand: values.brand,
-        quantity: values.quantity,
-        colors: values.colors || [],
         productCode: Date.now().toString(),
         category: 'Khác',
         price: 0,
-      });
+      };
+      if (Array.isArray(values.colors) && values.colors.length > 0) {
+        // Nếu có nhiều màu, lấy số lượng riêng cho từng màu từ values[`quantity_${color}`]
+        colorsArr = values.colors.map(c => ({
+          color: c,
+          images: [],
+          price: 0,
+          description: '',
+          quantity: Number(values[`quantity_${c}`]) || 0
+        }));
+        payload.colors = colorsArr;
+      } else {
+        payload.quantity = values.quantity;
+      }
+      await ProductService.createProduct(payload);
       if (!brands.some(b => b.name === values.brand)) {
         setBrands([...brands, { name: values.brand }]);
       }
@@ -57,10 +71,17 @@ const AdminStockManager = () => {
       }
     };
     window.addEventListener('storage', storageHandler);
+    // Lắng nghe sự kiện đặt hàng thành công từ HomePage/PaymentPage
+    const orderSuccessHandler = () => {
+      fetchProducts();
+      fetchBrands();
+    };
+    window.addEventListener('order-success', orderSuccessHandler);
     // Cleanup khi unmount
     return () => {
       eventBus.off('reloadProducts', reloadHandler);
       window.removeEventListener('storage', storageHandler);
+      window.removeEventListener('order-success', orderSuccessHandler);
     };
   }, []);
 
@@ -73,10 +94,13 @@ const AdminStockManager = () => {
         const updatedProduct = updatedRes.data[0];
         let updatedRows = [];
         if (Array.isArray(updatedProduct.colors) && updatedProduct.colors.length > 0) {
-          updatedRows = updatedProduct.colors.map((color) => ({
+          updatedRows = updatedProduct.colors.map((colorObj) => ({
             ...updatedProduct,
-            color,
-            key: `${updatedProduct._id}-${color}`,
+            color: colorObj.color,
+            images: colorObj.images,
+            price: colorObj.price,
+            description: colorObj.description,
+            key: `${updatedProduct._id}-${colorObj.color}`,
           }));
         } else {
           updatedRows = [{
@@ -103,16 +127,28 @@ const AdminStockManager = () => {
     try {
       const res = await ProductService.getAllProducts();
       const rawProducts = res?.data || [];
+      // Tự động cập nhật trạng thái sản phẩm dựa vào số lượng
+      await Promise.all(rawProducts.map(async (product) => {
+        const newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
+        if (product.status !== newStatus) {
+          await ProductService.updateProduct(product._id, { status: newStatus });
+          product.status = newStatus;
+        }
+      }));
       setProducts(rawProducts);
       // Tách mỗi màu thành 1 dòng riêng biệt
       const productList = [];
       rawProducts.forEach(product => {
         if (Array.isArray(product.colors) && product.colors.length > 0) {
-          product.colors.forEach((color) => {
+          product.colors.forEach((colorObj) => {
             productList.push({
               ...product,
-              color,
-              key: `${product._id}-${color}`,
+              color: colorObj.color,
+              images: colorObj.images,
+              price: colorObj.price,
+              description: colorObj.description,
+              key: `${product._id}-${colorObj.color}`,
+              quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0 // Luôn chỉ lấy số lượng từng màu
             });
           });
         } else {
@@ -120,6 +156,7 @@ const AdminStockManager = () => {
             ...product,
             color: null,
             key: `${product._id}-no-color`,
+            quantity: typeof product.quantity === 'number' ? product.quantity : 0
           });
         }
       });
@@ -142,7 +179,12 @@ const AdminStockManager = () => {
   const handleRestock = async () => {
     if (!selectedProduct || restockQty <= 0) return;
     try {
-      await OrderService.restockProduct({ productId: selectedProduct._id || selectedProduct.id, quantity: restockQty });
+      // Nếu sản phẩm có màu, truyền thêm color
+      const restockPayload = { productId: selectedProduct._id || selectedProduct.id, quantity: restockQty };
+      if (selectedProduct.color) {
+        restockPayload.color = selectedProduct.color;
+      }
+      await OrderService.restockProduct(restockPayload);
       message.success("Đã nhập kho thành công!");
       setRestockModal(false);
       fetchProducts();
@@ -177,20 +219,27 @@ const AdminStockManager = () => {
   return (
     <div style={{ padding: 24 }}>
       <h2>Quản lý kho sản phẩm</h2>
-      <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setAddModal(true)}>
+      <Button type="primary" style={{ marginBottom: 16 }} onClick={() => {
+        if (selectedProduct && selectedProduct.colors) {
+          addForm.setFieldsValue({ colors: selectedProduct.colors });
+        }
+        setAddModal(true);
+      }}>
         Thêm sản phẩm
       </Button>
+      {/* Đã loại bỏ bảng màu ở nút thêm sản phẩm theo yêu cầu */}
       <Table columns={columns} dataSource={displayProducts} rowKey={r => r.key} loading={loading} />
       {/* Modal nhập kho */}
       <Modal
         open={restockModal}
-        title={`Nhập kho: ${selectedProduct?.name}`}
+        title={`Nhập kho: ${selectedProduct?.name}${selectedProduct?.color ? ` - Màu ${selectedProduct.color}` : ''}`}
         onCancel={() => setRestockModal(false)}
         onOk={handleRestock}
         okText="Xác nhận"
       >
         <div style={{ marginBottom: 8 }}>
           <b>Tên sản phẩm:</b> {selectedProduct?.name}
+          {selectedProduct?.color && <span style={{ marginLeft: 16 }}><b>Màu:</b> {selectedProduct.color}</span>}
         </div>
         <div style={{ marginBottom: 8 }}>
           <b>Thương hiệu:</b> {selectedProduct?.brand}
@@ -224,22 +273,55 @@ const AdminStockManager = () => {
               allowClear
               notFoundContent={brands && brands.length === 0 ? 'Chưa có thương hiệu' : null}
             >
-              {brands.map(b => <Select.Option key={b.name} value={b.name}>{b.name}</Select.Option>)}
+              {brands.map(b => (
+                <Select.Option key={b.name} value={b.name}>{b.name}</Select.Option>
+              ))}
             </Select>
-          </Form.Item>
-          <Form.Item name="quantity" label="Số lượng nhập kho ban đầu" rules={[{ required: true, message: 'Nhập số lượng' }]}> 
-            <Input type="number" min={1} />
           </Form.Item>
           <Form.Item name="colors" label="Màu sắc (có thể chọn nhiều)">
             <Select
               mode="tags"
               style={{ width: '100%' }}
-              placeholder="Nhập hoặc chọn màu sắc, ví dụ: Đỏ, Xanh, Đen..."
+              placeholder="Nhập màu sắc, ví dụ: Đỏ, Xanh, Đen... (gõ tên màu rồi enter)"
               tokenSeparators={[',']}
               allowClear
-              // Không lấy options từ sản phẩm, chỉ cho nhập tự do
               options={[]}
+              onChange={(colors) => {
+                // Đảm bảo giá trị truyền vào luôn là mảng string
+                const colorArr = colors.map(c => typeof c === 'string' ? c : (c?.value || String(c)));
+                // Xóa các field số lượng của màu đã bị xóa
+                const currentFields = addForm.getFieldsValue();
+                Object.keys(currentFields).forEach(key => {
+                  if (key.startsWith('quantity_')) {
+                    const colorKey = key.replace('quantity_', '');
+                    if (!colorArr.includes(colorKey)) {
+                      addForm.setFieldsValue({ [key]: undefined });
+                    }
+                  }
+                });
+                // Thêm field số lượng cho màu mới
+                colorArr.forEach(color => {
+                  if (!addForm.getFieldValue(`quantity_${color}`)) {
+                    addForm.setFieldsValue({ [`quantity_${color}`]: 0 });
+                  }
+                });
+                // Force update form to re-render quantity fields immediately
+                addForm.setFieldsValue({ colors: colorArr });
+              }}
             />
+            {/* Các ô nhập số lượng cho từng màu luôn nằm trong Form.Item colors để đảm bảo kết nối form */}
+            {(addForm.getFieldValue('colors') && Array.isArray(addForm.getFieldValue('colors')) && addForm.getFieldValue('colors').length > 0) && addForm.getFieldValue('colors').map(color => (
+              color && typeof color === 'string' && color.trim() !== '' ? (
+                <Form.Item
+                  key={`quantity_${color}`}
+                  name={`quantity_${color}`}
+                  label={`${addForm.getFieldValue('name') || 'Sản phẩm'} (${color})`}
+                  rules={[{ required: true, message: `Nhập số lượng cho ${addForm.getFieldValue('name') || 'sản phẩm'} (${color})` }]}
+                >
+                  <Input type="number" min={0} />
+                </Form.Item>
+              ) : null
+            ))}
           </Form.Item>
         </Form>
       </Modal>

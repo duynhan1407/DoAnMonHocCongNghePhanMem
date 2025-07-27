@@ -1,13 +1,23 @@
 // Tăng số lượng sản phẩm (restock)
 const restockProduct = async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, color } = req.body;
     if (!productId || typeof quantity !== 'number' || quantity <= 0) {
       return res.status(400).json({ status: 'ERR', message: 'productId và quantity > 0 là bắt buộc' });
     }
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ status: 'ERR', message: 'Product not found' });
+    }
+    // Nếu có màu, cập nhật số lượng cho màu đó
+    if (color && Array.isArray(product.colors)) {
+      const colorIdx = product.colors.findIndex(c => c.color === color);
+      if (colorIdx !== -1) {
+        if (typeof product.colors[colorIdx].quantity !== 'number') {
+          product.colors[colorIdx].quantity = 0;
+        }
+        product.colors[colorIdx].quantity += quantity;
+      }
     }
     product.quantity = (product.quantity || 0) + quantity;
     await product.save();
@@ -23,7 +33,7 @@ const restockProduct = async (req, res) => {
 // Xuất kho sản phẩm (giảm số lượng)
 const exportProduct = async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, color } = req.body;
     if (!productId || typeof quantity !== 'number' || quantity <= 0) {
       return res.status(400).json({ status: 'ERR', message: 'productId và quantity > 0 là bắt buộc' });
     }
@@ -34,21 +44,34 @@ const exportProduct = async (req, res) => {
     if ((product.quantity || 0) < quantity) {
       return res.status(400).json({ status: 'ERR', message: 'Số lượng trong kho không đủ để xuất' });
     }
-        product.quantity = (product.quantity || 0) - quantity;
-        await product.save();
-        // Cập nhật lại tổng số lượng sản phẩm của thương hiệu
-        let brandDoc = null;
-        if (product.brand) {
-            brandDoc = await Brand.findOne({ name: product.brand });
-            if (brandDoc) {
-                const totalQty = await Product.aggregate([
-                    { $match: { brand: product.brand } },
-                    { $group: { _id: null, total: { $sum: "$quantity" } } }
-                ]);
-                brandDoc.quantity = totalQty[0]?.total || 0;
-                await brandDoc.save();
-            }
+    // Nếu có màu, cập nhật số lượng cho màu đó
+    if (color && Array.isArray(product.colors)) {
+      const colorIdx = product.colors.findIndex(c => c.color === color);
+      if (colorIdx !== -1) {
+        if (typeof product.colors[colorIdx].quantity !== 'number') {
+          product.colors[colorIdx].quantity = 0;
         }
+        if (product.colors[colorIdx].quantity < quantity) {
+          return res.status(400).json({ status: 'ERR', message: 'Số lượng màu không đủ để xuất' });
+        }
+        product.colors[colorIdx].quantity -= quantity;
+      }
+    }
+    product.quantity = (product.quantity || 0) - quantity;
+    await product.save();
+    // Cập nhật lại tổng số lượng sản phẩm của thương hiệu
+    let brandDoc = null;
+    if (product.brand) {
+      brandDoc = await Brand.findOne({ name: product.brand });
+      if (brandDoc) {
+        const totalQty = await Product.aggregate([
+          { $match: { brand: product.brand } },
+          { $group: { _id: null, total: { $sum: "$quantity" } } }
+        ]);
+        brandDoc.quantity = totalQty[0]?.total || 0;
+        await brandDoc.save();
+      }
+    }
         return res.status(200).json({
             status: 'OK',
             message: 'Đã xuất kho sản phẩm thành công',
@@ -131,8 +154,21 @@ const calculateOrderTotal = async (orderItems) => {
   for (const item of orderItems) {
     const product = await Product.findById(item.productId);
     if (!product) throw new Error(`Product ID ${item.productId} not found`);
-    const price = product.price * (1 - (product.discount || 0) / 100);
-    total += price * (item.quantity || 1);
+    let price = product.price;
+    let discount = product.discount || 0;
+    // Nếu có màu, lấy giá và discount từ màu đó
+    if (item.color && Array.isArray(product.colors)) {
+      const colorObj = product.colors.find(c => c.color === item.color);
+      if (colorObj) {
+        price = typeof colorObj.price === 'number' ? colorObj.price : price;
+        discount = typeof colorObj.discount === 'number' ? colorObj.discount : discount;
+      }
+    }
+    // Đảm bảo price là số hợp lệ
+    if (typeof price !== 'number' || isNaN(price)) price = 0;
+    if (typeof discount !== 'number' || isNaN(discount)) discount = 0;
+    const finalPrice = price * (1 - discount / 100);
+    total += finalPrice * (item.quantity || 1);
   }
   return total;
 };
@@ -158,6 +194,30 @@ const createOrder = async (req, res) => {
             name
         });
         const savedOrder = await order.save();
+
+        // Trừ số lượng sản phẩm trong kho ngay khi tạo đơn hàng
+        if (Array.isArray(orderItems)) {
+          for (const item of orderItems) {
+            const product = await Product.findById(item.productId);
+            if (product) {
+              if (item.color && Array.isArray(product.colors)) {
+                const colorIdx = product.colors.findIndex(c => c.color === item.color);
+                if (colorIdx !== -1) {
+                  if (typeof product.colors[colorIdx].quantity !== 'number') {
+                    product.colors[colorIdx].quantity = 0;
+                  }
+                  product.colors[colorIdx].quantity = Math.max(0, (product.colors[colorIdx].quantity || 0) - (item.quantity || 1));
+                  await product.save();
+                  continue;
+                }
+              }
+              // Nếu không có màu, trừ số lượng tổng
+              product.quantity = Math.max(0, (product.quantity || 0) - (item.quantity || 1));
+              await product.save();
+            }
+          }
+        }
+
     return res.status(201).json({
       status: 'OK',
       message: 'Order created successfully',
@@ -226,9 +286,16 @@ const updateOrder = async (req, res) => {
     const { id } = req.params;
     const { orderItems, status } = req.body;
     const totalPrice = orderItems ? await calculateOrderTotal(orderItems) : undefined;
+    let updateData = { ...req.body };
+    if (totalPrice) updateData.totalPrice = totalPrice;
+    // Nếu trạng thái chuyển sang 'delivered', cập nhật isPaid và paidAt
+    if (updateData.status && updateData.status.toLowerCase() === 'delivered') {
+      updateData.isPaid = true;
+      updateData.paidAt = new Date();
+    }
     const updatedOrder = await Order.findByIdAndUpdate(
       id,
-      { ...req.body, ...(totalPrice && { totalPrice }) },
+      updateData,
       { new: true }
     )
       .populate('user', 'name email')
@@ -236,9 +303,6 @@ const updateOrder = async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ status: 'ERR', message: 'Order not found' });
     }
-
-    // Đã bỏ logic trừ số lượng sản phẩm khi cập nhật trạng thái sang 'delivered'.
-
     return res.status(200).json({
       status: 'OK',
       message: 'Order updated successfully',

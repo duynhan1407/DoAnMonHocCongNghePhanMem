@@ -10,9 +10,13 @@ const BrandComponent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
+  // Chỉ lấy thương hiệu có sản phẩm còn hàng
+  // Lấy tất cả thương hiệu đã thêm
   const fetchBrands = async () => {
     const res = await BrandService.getAllBrands();
-    if (res?.data) setBrands(res.data);
+    if (res?.data) {
+      setBrands(res.data);
+    }
   };
 
 
@@ -32,12 +36,32 @@ const BrandComponent = () => {
     const fetchProducts = async () => {
       const res = await ProductService.getAllProducts();
       if (res?.data) {
-        const inStockProducts = res.data.filter(p => (p.quantity || 0) > 0);
-        setProducts(inStockProducts);
+        // Tách mỗi màu thành 1 sản phẩm riêng biệt với quantity riêng
+        const productList = [];
+        res.data.forEach(product => {
+          if (Array.isArray(product.colors) && product.colors.length > 0) {
+            product.colors.forEach((colorObj) => {
+              productList.push({
+                ...product,
+                color: colorObj.color,
+                quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0
+              });
+            });
+          } else {
+            productList.push({
+              ...product,
+              color: null,
+              quantity: typeof product.quantity === 'number' ? product.quantity : 0
+            });
+          }
+        });
+        // Lấy tất cả sản phẩm (không lọc còn hàng)
+        setProducts(productList);
+        // Sau khi cập nhật products, mới gọi fetchBrands để cập nhật brands
+        setTimeout(fetchBrands, 0);
       }
     };
     fetchProducts();
-    fetchBrands();
     // Lắng nghe reloadProducts để tự động reload số lượng khi có sự kiện từ eventBus hoặc localStorage
     const reloadHandler = () => {
       fetchProducts();
@@ -59,21 +83,12 @@ const BrandComponent = () => {
   }, []);
 
   // Tổng số lượng sản phẩm còn lại trong kho cho mỗi thương hiệu (không cộng dồn theo màu)
+  // Tổng số lượng sản phẩm của thương hiệu (mỗi màu là một sản phẩm riêng biệt)
   const getProductStock = (brandName) => {
-    // Lấy tất cả sản phẩm cùng tên, cùng brand, chỉ tính 1 lần cho mỗi màu
+    // Lấy tất cả sản phẩm cùng brand
     const filtered = products.filter((p) => p.brand === brandName);
-    // Nếu sản phẩm có nhiều màu, chia đều quantity cho số màu, mỗi màu là 1 sản phẩm riêng biệt
-    let total = 0;
-    filtered.forEach(p => {
-      if (Array.isArray(p.colors) && p.colors.length > 0) {
-        // Mỗi màu là 1 sản phẩm riêng biệt, chia đều quantity nếu cần
-        // Nếu nhập 1 sản phẩm 2 màu, quantity là tổng, mỗi màu là 1 sản phẩm riêng biệt với quantity đó
-        total += (p.quantity || 0) * p.colors.length;
-      } else {
-        total += (p.quantity || 0);
-      }
-    });
-    return total;
+    // Mỗi sản phẩm đã tách màu riêng, chỉ cần cộng quantity của từng sản phẩm
+    return filtered.reduce((sum, p) => sum + (typeof p.quantity === 'number' ? p.quantity : 0), 0);
   };
 
   const getProductCount = (brandName) => {

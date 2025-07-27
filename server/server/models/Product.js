@@ -19,10 +19,6 @@ const ProductSchema = new Schema({
     type: String,
     required: [true, 'Thương hiệu là bắt buộc']
   },
-  price: {
-    type: Number,
-    required: true
-  },
   description: {
     type: String
   },
@@ -30,30 +26,26 @@ const ProductSchema = new Schema({
     type: Number,
     default: 0
   },
-  images: [{
-    type: String,
-    required: [true, 'Hình ảnh sản phẩm là bắt buộc']
-  }],
-  discount: {
-    type: Number,
-    default: 0
-  },
-  quantity: {
-    type: Number,
-    required: [true, 'Số lượng là bắt buộc'],
-    default: 0
-  },
+
+  
+
   features: [{
     type: String
   }],
   colors: [{
-    type: String
+    color: { type: String },
+    images: [String],
+    price: Number,
+    description: String,
+    quantity: { type: Number },
+    discount: { type: Number, default: 0 },
+    status: {
+      type: String,
+      enum: ['Available', 'Out of Stock', 'Discontinued'],
+      default: 'Available'
+    },
+    rating: { type: Number, default: 0 }
   }],
-  status: {
-    type: String,
-    enum: ['Available', 'Out of Stock', 'Discontinued'],
-    default: 'Available'
-  }
 }, {
   timestamps: true
 });

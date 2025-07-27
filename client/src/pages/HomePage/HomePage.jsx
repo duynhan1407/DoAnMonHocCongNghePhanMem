@@ -13,15 +13,21 @@ import * as ProductService from '../../services/ProductService';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  // Điều hướng sang trang chi tiết sản phẩm
-  const handleProductClick = (productId) => {
-    navigate(`/product-detail/${productId}`);
-  };
   const user = useSelector((state) => state.user);
+  const userId = user?.id || user?._id;
   const favorite = useSelector((state) => state.favorite.items);
   const dispatch = useDispatch();
+
+  // Điều hướng sang trang chi tiết sản phẩm
+  const handleProductClick = (productId) => navigate(`/product-detail/${productId}`);
+
+  // Kiểm tra sản phẩm có trong mục yêu thích không
+  const isFavorite = React.useCallback(
+    (productId) => favorite.some(item => item._id === productId),
+    [favorite]
+  );
+
   // Thêm/xóa mục yêu thích
-  const isFavorite = (productId) => favorite.some(item => item._id === productId);
   const handleToggleFavorite = (product) => {
     if (isFavorite(product._id)) {
       dispatch({ type: 'favorite/removeFromFavorite', payload: product._id });
@@ -31,9 +37,12 @@ const HomePage = () => {
       message.success('Đã thêm vào mục yêu thích!');
     }
   };
+
+  // Khởi tạo giỏ hàng từ localStorage, đảm bảo có productId
   const [cart, setCart] = useState(() => {
     const stored = localStorage.getItem('cart');
-    return stored ? JSON.parse(stored) : [];
+    let initialCart = stored ? JSON.parse(stored) : [];
+    return initialCart.map(item => ({ ...item, productId: item.productId || item._id }));
   });
   const [searchText, setSearchText] = useState('');
 
@@ -41,13 +50,37 @@ const HomePage = () => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const { data: products = [], isLoading, error } = useQuery({
+  const {
+    data: products = [],
+    isLoading,
+    error,
+    refetch: refetchProducts
+  } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
       const res = await ProductService.getAllProducts();
       return res?.data || [];
     },
   });
+
+  // Lắng nghe sự kiện đặt hàng thành công và reload kho từ localStorage
+  React.useEffect(() => {
+    const handleOrderSuccess = () => {
+      refetchProducts();
+    };
+    window.addEventListener('order-success', handleOrderSuccess);
+    // Lắng nghe thay đổi localStorage để reload sản phẩm
+    const handleStorage = (e) => {
+      if (e.key === 'reloadProducts') {
+        refetchProducts();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('order-success', handleOrderSuccess);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [refetchProducts]);
 
   // Điều hướng sang trang chi tiết sản phẩm
   const handleAddToCart = (product) => {
@@ -59,6 +92,7 @@ const HomePage = () => {
       ...cart,
       {
         ...product,
+        productId: product._id,
         quantity: 1,
       },
     ]);
@@ -66,7 +100,7 @@ const HomePage = () => {
   };
 
   const handleGoToCart = () => {
-    if (!user?.access_token) {
+    if (!user?.access_token || !userId) {
       Modal.info({
         title: 'Thông báo',
         content: 'Bạn cần đăng nhập để sử dụng giỏ hàng!',
@@ -78,6 +112,7 @@ const HomePage = () => {
     navigate('/cart', {
       state: {
         cart,
+        userId: userId,
       },
     });
   };
@@ -198,11 +233,18 @@ const HomePage = () => {
                   src={
                     Array.isArray(product.images) && product.images.length > 0 && typeof product.images[0] === 'string' && product.images[0].trim() !== ''
                       ? product.images[0]
-                      : '/default-product.jpg'
+                      : (Array.isArray(product.colors) && product.colors.length > 0 && Array.isArray(product.colors[0].images) && product.colors[0].images.length > 0 && typeof product.colors[0].images[0] === 'string' && product.colors[0].images[0].trim() !== ''
+                        ? product.colors[0].images[0]
+                        : '/default-product.jpg')
                   }
                   alt={product.name}
                   style={{ width: 180, height: 180, objectFit: 'contain', marginBottom: 18, background: '#fff', borderRadius: 0, boxShadow: 'none' }}
-                  onError={e => { e.target.onerror = null; e.target.src = '/default-product.jpg'; }}
+                  onError={e => {
+                    if (!e.target.src.includes('default-product.jpg')) {
+                      e.target.onerror = null;
+                      e.target.src = '/default-product.jpg';
+                    }
+                  }}
                 />
                 {/* Brand */}
                 <div style={{ color: '#222', fontSize: 13, fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>{product.brand}</div>

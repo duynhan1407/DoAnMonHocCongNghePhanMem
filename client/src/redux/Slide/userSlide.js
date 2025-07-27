@@ -36,7 +36,8 @@ const userSlice = createSlice({
       state.address = address || state.address;
       state.avatar = avatar || state.avatar;
       state.access_token = access_token || state.access_token;
-      state.id = id || _id || state.id; // Ưu tiên id, sau đó _id
+      state.id = id || state.id;
+      state._id = _id || state._id;
       state.isAdmin = isAdmin || state.isAdmin;
     },
 

@@ -3,6 +3,7 @@
     "@ant-design/icons": "^6.0.0",
     "@payos/node": "^1.0.10",
     "cloudinary": "^2.5.1",
+    "gh-pages": "^6.3.0",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
     "qrcode.react": "^4.2.0",

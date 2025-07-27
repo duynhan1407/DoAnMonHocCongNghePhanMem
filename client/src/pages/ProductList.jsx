@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, Row, Col, Input, Select, Pagination, Button, Modal, Rate, message, Spin, DatePicker, Space } from "antd";
 import dayjs from "dayjs";
 import * as ProductService from "../services/ProductService";
+import { useNavigate } from 'react-router-dom';
 
 const { Option } = Select;
 
@@ -58,9 +59,9 @@ const ProductList = () => {
     setPagination((prev) => ({ ...prev, current: page, pageSize }));
   };
 
+  const navigate = useNavigate();
   const showProductDetail = (product) => {
-    setSelectedProduct(product);
-    setModalVisible(true);
+    navigate(`/product/${product._id}`);
   };
 
   // Thêm vào giỏ hàng
@@ -70,11 +71,16 @@ const ProductList = () => {
       message.info('Sản phẩm đã có trong giỏ hàng!');
       return;
     }
-    cart.push({ ...product, quantity: 1 });
+    cart.push({ ...product, productId: product._id, quantity: 1 });
     localStorage.setItem('cartProducts', JSON.stringify(cart));
     message.success('Đã thêm vào giỏ hàng!');
   };
   // ...existing code...
+  // Chuyển sang trang nhập thông tin khách hàng với sản phẩm đã chọn
+  const handleOrderNow = (product) => {
+    // Chỉ chuyển sang trang nhập thông tin, không chuyển sang thanh toán
+    navigate('/order-info', { state: { cart: [{ ...product, productId: product._id, quantity: 1 }] } });
+  };
   return (
     <div style={{ padding: 24 }}>
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -122,6 +128,7 @@ const ProductList = () => {
                 actions={[
                   <Button type="primary" onClick={() => showProductDetail(product)}>Xem chi tiết</Button>,
                   <Button onClick={() => handleAddToCart(product)}>Thêm vào giỏ</Button>,
+                  <Button type="default" style={{ background: '#b4005a', color: '#fff', borderColor: '#b4005a' }} onClick={() => handleOrderNow(product)}>Đặt hàng</Button>,
                 ]}
               >
                 <Card.Meta

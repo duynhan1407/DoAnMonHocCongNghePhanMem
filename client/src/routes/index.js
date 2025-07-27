@@ -13,6 +13,7 @@ import PaymentPage from "../pages/Payment/PaymentPage";
 import CartPage from "../pages/CartPage/CartPage";
 import OauthSuccess from "../pages/OauthSuccess";
 import ProductDetailPage from "../pages/ProductDetailPage/ProductDetailPage";
+import OrderInfoPage from "../pages/OrderInfoPage/OrderInfoPage";
 
 
 // Public routes
@@ -35,6 +36,7 @@ const publicRoutes = [
   },
   { path: "/oauth-success", page: OauthSuccess, isShowHeader: false, title: "OAuth Success" },
   { path: "/product-detail/:productId", page: ProductDetailPage, isShowHeader: true, title: "Chi tiết sản phẩm" },
+  { path: "/order-info", page: OrderInfoPage, isShowHeader: true, title: "Xác nhận thông tin" },
 ];
 
 // Private routes
