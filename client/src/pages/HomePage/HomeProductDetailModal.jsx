@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Descriptions, Card, Row, Col, Image, Tag, Typography, Divider, Spin } from "antd";
 import * as ProductService from "../../services/ProductService";
+import * as CategoryService from "../../services/CategoryService";
 
 const { Title, Text, Paragraph } = Typography;
 
 const HomeProductDetailModal = ({ productId, open, onClose, onAddToCart }) => {
+  const [categoryName, setCategoryName] = useState("");
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -13,7 +15,18 @@ const HomeProductDetailModal = ({ productId, open, onClose, onAddToCart }) => {
     if (!productId || !open) return;
     setLoading(true);
     ProductService.getProductById(productId)
-      .then((data) => setProduct(data))
+      .then((data) => {
+        setProduct(data);
+        // Lấy tên danh mục từ backend
+        if (data?.category) {
+          CategoryService.getAllCategories()
+            .then(res => {
+              const found = res?.data?.find(c => c.name === data.category);
+              setCategoryName(found ? found.name : data.category);
+            })
+            .catch(() => setCategoryName(data.category));
+        }
+      })
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
     setQuantity(1);
@@ -54,7 +67,7 @@ const HomeProductDetailModal = ({ productId, open, onClose, onAddToCart }) => {
           <Col span={14}>
             <Title level={4}>{product.name} ({product.brand})</Title>
             <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Danh mục">{product.category}</Descriptions.Item>
+              <Descriptions.Item label="Danh mục">{categoryName}</Descriptions.Item>
               <Descriptions.Item label="Thương hiệu">{product.brand}</Descriptions.Item>
               <Descriptions.Item label="Giá">{product.price?.toLocaleString("vi-VN")} ₫</Descriptions.Item>
               {product.discount ? <Descriptions.Item label="Giảm giá"><Tag color="blue">{product.discount}%</Tag></Descriptions.Item> : null}

@@ -16,7 +16,21 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(false);
 
   const shippingFee = shipping === 'local' ? 40000 : 100000;
-  const subtotal = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+  // Tính giá sau giảm cho từng item
+  const getSalePrice = (item) => {
+    let discount = 0;
+    if (item.color && Array.isArray(item.colors)) {
+      const colorObj = item.colors.find(c => c.color === item.color);
+      discount = colorObj && typeof colorObj.discount === 'number' ? colorObj.discount : 0;
+    } else {
+      discount = typeof item.discount === 'number' ? item.discount : 0;
+    }
+    if (typeof item.price === 'number' && discount > 0) {
+      return item.price * (1 - discount / 100);
+    }
+    return item.price;
+  };
+  const subtotal = cart.reduce((sum, item) => sum + getSalePrice(item) * (item.quantity || 1), 0);
   const total = subtotal + shippingFee;
 
   const handleOrder = async () => {
@@ -48,6 +62,9 @@ const PaymentPage = () => {
         status: 'pending',
       });
       message.success('Đặt hàng thành công!');
+      // Xóa toàn bộ giỏ hàng khi đặt hàng thành công
+      localStorage.removeItem('cart');
+      window.dispatchEvent(new Event('storage'));
       // Phát sự kiện cập nhật sản phẩm cho HomePage
       window.dispatchEvent(new Event('order-success'));
       // Phát sự kiện reload kho cho AdminStockManager
@@ -91,13 +108,30 @@ const PaymentPage = () => {
       {/* Right: Order Summary */}
       <div style={{ flex: 1 }}>
         <Card title={<b>Đơn hàng ({cart.length} sản phẩm)</b>}>
-          {cart.map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <img src={item.images?.[0] || item.image || '/assets/images/no-image.png'} alt={item.name} style={{ width: 48, height: 48, objectFit: 'contain', marginRight: 12 }} />
-              <span style={{ fontWeight: 600 }}>{item.name}</span>
-              <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 600 }}>{item.price?.toLocaleString('vi-VN')}₫</span>
-            </div>
-          ))}
+          {cart.map((item, idx) => {
+            let discount = 0;
+            if (item.color && Array.isArray(item.colors)) {
+              const colorObj = item.colors.find(c => c.color === item.color);
+              discount = colorObj && typeof colorObj.discount === 'number' ? colorObj.discount : 0;
+            } else {
+              discount = typeof item.discount === 'number' ? item.discount : 0;
+            }
+            let salePrice = item.price;
+            if (typeof item.price === 'number' && discount > 0) {
+              salePrice = item.price * (1 - discount / 100);
+            }
+            return (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                <img src={item.images?.[0] || item.image || '/assets/images/no-image.png'} alt={item.name} style={{ width: 48, height: 48, objectFit: 'contain', marginRight: 12 }} />
+                <span style={{ fontWeight: 600 }}>{item.name}</span>
+                {discount > 0 ? (
+                  <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 700 }}>{salePrice.toLocaleString('vi-VN')}₫</span>
+                ) : (
+                  <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 600 }}>{item.price?.toLocaleString('vi-VN')}₫</span>
+                )}
+              </div>
+            );
+          })}
           <Input.Group compact style={{ marginBottom: 16 }}>
             <Input style={{ width: '70%' }} placeholder="Nhập mã giảm giá" value={discount} onChange={e => setDiscount(e.target.value)} />
             <Button type="primary" style={{ background: '#b4005a', borderColor: '#b4005a' }} onClick={() => setDiscountApplied(true)}>Áp dụng</Button>

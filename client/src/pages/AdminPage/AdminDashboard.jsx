@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { Table, Card, Statistic, Row, Col, DatePicker, Button, message } from 'antd';
+import { BarChartOutlined } from '@ant-design/icons';
 import RevenueChart from '../../components/RevenueChart';
 import moment from 'moment';
 
@@ -10,6 +11,7 @@ const AdminDashboard = () => {
   const user = useSelector(state => state.user);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState([null, null]);
+  const [showChart, setShowChart] = useState(false);
 
   const fetchStats = async (startDate, endDate) => {
     setLoading(true);
@@ -61,6 +63,15 @@ const AdminDashboard = () => {
               Lấy thống kê
             </Button>
           </Col>
+          <Col>
+            <Button
+              icon={<BarChartOutlined />}
+              onClick={() => setShowChart((prev) => !prev)}
+              type={showChart ? 'primary' : 'default'}
+            >
+              {showChart ? 'Ẩn biểu đồ' : 'Hiện biểu đồ'}
+            </Button>
+          </Col>
         </Row>
         {stats && (
           <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -75,17 +86,20 @@ const AdminDashboard = () => {
             </Col>
           </Row>
         )}
-        <div style={{ marginBottom: 32 }}>
-          <h3 style={{ marginBottom: 12 }}>Biểu đồ doanh thu theo ngày</h3>
-          <RevenueChart data={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []} />
-        </div>
-        <Table
-          columns={columns}
-          dataSource={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []}
-          rowKey="date"
-          loading={loading}
-          pagination={false}
-        />
+        {showChart ? (
+          <div style={{ marginBottom: 32 }}>
+            <h3 style={{ marginBottom: 12 }}>Biểu đồ doanh thu theo ngày</h3>
+            <RevenueChart data={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []} />
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={Array.isArray(stats?.dailyStats) ? stats.dailyStats : []}
+            rowKey="date"
+            loading={loading}
+            pagination={false}
+          />
+        )}
       </Card>
     </div>
   );

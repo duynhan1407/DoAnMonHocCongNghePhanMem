@@ -85,90 +85,112 @@ const OrderPage = () => {
           <Spin size="large" />
         </div>
       ) : (
-        <Form
-          layout="vertical"
-          form={form}
-          onFinish={handleOrder}
-          initialValues={{
-            name: user?.name || "",
-            email: user?.email || "",
-            phone: user?.phone || "",
-          }}
-        >
-          <Form.Item
-            label="Chọn sản phẩm"
-            name="product"
-            rules={[{ required: true, message: "Vui lòng chọn sản phẩm!" }]}
+        <>
+          <Form
+            layout="vertical"
+            form={form}
+            onFinish={handleOrder}
+            initialValues={{
+              name: user?.name || "",
+              email: user?.email || "",
+              phone: user?.phone || "",
+            }}
           >
-            <Select
-              placeholder="Chọn sản phẩm"
-              onChange={(productId) =>
-                setSelectedProduct(products.find((p) => p._id === productId))
-              }
+            <Form.Item
+              label="Chọn sản phẩm"
+              name="product"
+              rules={[{ required: true, message: "Vui lòng chọn sản phẩm!" }]}
             >
-              {products.map((product) => (
-                <Option key={product._id} value={product._id}>
-                  {product.name} - {Number(product.price).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}₫
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            label="Số lượng"
-            name="quantity"
-            initialValue={1}
-            rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
-          >
-            <Input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={e => setQuantity(Number(e.target.value))}
-              placeholder="Nhập số lượng"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Họ tên"
-            name="name"
-            rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
-          >
-            <Input placeholder="Nhập họ tên" />
-          </Form.Item>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, type: "email", message: "Email không hợp lệ!" },
-            ]}
-          >
-            <Input placeholder="Nhập email" />
-          </Form.Item>
-          <Form.Item
-            label="Số điện thoại"
-            name="phone"
-            rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
-          >
-            <Input placeholder="Nhập số điện thoại" />
-          </Form.Item>
-          <Form.Item
-            label="Phương thức thanh toán"
-            name="paymentMethod"
-            rules={[{ required: true, message: "Vui lòng chọn phương thức!" }]}
-          >
-            <Select placeholder="Chọn phương thức thanh toán">
-              <Option value="Credit Card">Thẻ tín dụng</Option>
-              <Option value="PayPal">PayPal</Option>
-              <Option value="Cash">Tiền mặt</Option>
-            </Select>
-          </Form.Item>
-          <div style={{ marginBottom: "20px" }}>
-            <strong>Tổng tiền:</strong>{" "}
-            {totalPrice > 0 ? Number(totalPrice).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + "₫" : "0₫"}
-          </div>
-          <Button type="primary" htmlType="submit" loading={orderLoading}>
-            Xác nhận đặt hàng
-          </Button>
-        </Form>
+              <Select
+                placeholder="Chọn sản phẩm"
+                onChange={(productId) =>
+                  setSelectedProduct(products.find((p) => p._id === productId))
+                }
+              >
+                {products.map((product) => (
+                  <Option key={product._id} value={product._id}>
+                    {product.name} - {Number(product.price).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}₫
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="Số lượng"
+              name="quantity"
+              initialValue={1}
+              rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
+            >
+              <Input
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={e => setQuantity(Number(e.target.value))}
+                placeholder="Nhập số lượng"
+              />
+            </Form.Item>
+            <Form.Item
+              label="Họ tên"
+              name="name"
+              rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
+            >
+              <Input placeholder="Nhập họ tên" />
+            </Form.Item>
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                { required: true, type: "email", message: "Email không hợp lệ!" },
+              ]}
+            >
+              <Input placeholder="Nhập email" />
+            </Form.Item>
+            <Form.Item
+              label="Số điện thoại"
+              name="phone"
+              rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
+            >
+              <Input placeholder="Nhập số điện thoại" />
+            </Form.Item>
+            <Form.Item
+              label="Phương thức thanh toán"
+              name="paymentMethod"
+              rules={[{ required: true, message: "Vui lòng chọn phương thức!" }]}
+            >
+              <Select placeholder="Chọn phương thức thanh toán">
+                <Option value="Credit Card">Thẻ tín dụng</Option>
+                <Option value="PayPal">PayPal</Option>
+                <Option value="Cash">Tiền mặt</Option>
+              </Select>
+            </Form.Item>
+            <div style={{ marginBottom: "20px" }}>
+              <strong>Tổng tiền:</strong>{" "}
+              {totalPrice > 0 ? Number(totalPrice).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + "₫" : "0₫"}
+            </div>
+            <Button type="primary" htmlType="submit" loading={orderLoading}>
+              Xác nhận đặt hàng
+            </Button>
+          </Form>
+          {/* Hiển thị thông số kỹ thuật của sản phẩm đã chọn */}
+          {selectedProduct && selectedProduct.description && (
+            <div style={{ marginTop: 32, background: '#fafafa', borderRadius: 8, padding: 16 }}>
+              <h3>Thông số kỹ thuật sản phẩm</h3>
+              <ul style={{ fontSize: 16, paddingLeft: 24, margin: 0 }}>
+                {selectedProduct.description.split(/\n|\r|<br\s*\/?>/)
+                  .map(line => line.trim())
+                  .filter(line => line && line.includes(":"))
+                  .map((line, idx) => {
+                    const [key, ...rest] = line.split(":");
+                    if (!key || rest.length === 0 || !rest.join(":").trim()) return null;
+                    return (
+                      <li key={idx} style={{ marginBottom: 8, listStyle: 'disc', textAlign: 'left' }}>
+                        <span style={{ fontWeight: 600 }}>{key.trim()}:</span> {rest.join(":").trim()}
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

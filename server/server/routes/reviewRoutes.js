@@ -7,6 +7,8 @@ const { AuthMiddleware, AuthUserMiddleware } = require('../middleware/AuthMiddle
 router.post('/', AuthUserMiddleware, ReviewController.createReview);
 // Lấy tất cả review của 1 sản phẩm
 router.get('/product/:productId', ReviewController.getReviewsByProduct);
+// Lấy tất cả review của mọi sản phẩm
+router.get('/all', ReviewController.getAllReviews);
 // Xóa review (admin hoặc chủ review)
 router.delete('/:id', AuthUserMiddleware, ReviewController.deleteReview);
 

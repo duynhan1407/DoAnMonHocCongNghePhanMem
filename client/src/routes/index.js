@@ -1,8 +1,10 @@
 
 
 import HomePage from "../pages/HomePage/HomePage";
+import SearchProduct from "../components/SearchProduct/SearchProduct";
 import FavoritePage from "../pages/FavoritePage/FavoritePage";
 import AdminStockPage from "../pages/AdminStockPage";
+import AdminReviewPage from "../pages/AdminReviewPage";
 import NotFoundPage from "../pages/NotFoundPage/NotFoundPage";
 import SignInPage from "../pages/SignInPage/SignInPage";
 import SignUpPage from "../pages/SignUpPage/SignUpPage";
@@ -19,6 +21,7 @@ import OrderInfoPage from "../pages/OrderInfoPage/OrderInfoPage";
 // Public routes
 const publicRoutes = [
   { path: "/", page: HomePage, isShowHeader: true, title: "Home" },
+  { path: "/search", page: SearchProduct, isShowHeader: true, title: "Tìm kiếm sản phẩm" },
   { path: "/favorite", page: FavoritePage, isShowHeader: true, title: "Yêu thích" },
   { path: "/sign-in", page: SignInPage, isShowHeader: false, title: "Sign In" },
   { path: "/sign-up", page: SignUpPage, isShowHeader: false, title: "Sign Up" },
@@ -79,6 +82,22 @@ const adminRoutes = [
     page: AdminStockPage,
     isShowHeader: false,
     title: "Quản lý kho",
+    isPrivate: true,
+    isAdmin: true,
+  },
+  {
+    path: "/admin/reviews",
+    page: AdminReviewPage,
+    isShowHeader: false,
+    title: "Quản lý đánh giá",
+    isPrivate: true,
+    isAdmin: true,
+  },
+  {
+    path: "/admin/category",
+    page: require('../pages/AdminCategoryPage').default,
+    isShowHeader: false,
+    title: "Quản lý danh mục",
     isPrivate: true,
     isAdmin: true,
   },

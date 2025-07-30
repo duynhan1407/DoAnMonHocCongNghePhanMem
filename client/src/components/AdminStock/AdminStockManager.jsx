@@ -2,13 +2,57 @@ import React, { useEffect, useState } from "react";
 import eventBus from '../../utils/eventBus';
 import { Table, Button, Input, Modal, message, Form, Select } from "antd";
 import * as ProductService from "../../services/ProductService";
-import * as OrderService from "../../services/OrderService";
-import * as BrandService from "../../services/BrandService";
+// Removed unused imports
+// Removed unused BrandService import
 
 const AdminStockManager = () => {
-  const [products, setProducts] = useState([]);
+  const fetchProducts = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await ProductService.getAllProducts();
+      const rawProducts = res?.data || [];
+      await Promise.all(rawProducts.map(async (product) => {
+        const newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
+        if (product.status !== newStatus) {
+          await ProductService.updateProduct(product._id, { status: newStatus });
+          product.status = newStatus;
+        }
+      }));
+      // Tách mỗi màu thành 1 dòng riêng biệt với quantity đúng
+      const productList = [];
+      rawProducts.forEach(product => {
+        if (Array.isArray(product.colors) && product.colors.length > 0) {
+          product.colors.forEach((colorObj) => {
+            productList.push({
+              ...product,
+              color: colorObj.color,
+              images: colorObj.images,
+              price: colorObj.price,
+              description: colorObj.description,
+              key: `${product._id}-${colorObj.color}`,
+              quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0
+            });
+          });
+        } else {
+          productList.push({
+            ...product,
+            color: null,
+            key: `${product._id}-no-color`,
+            quantity: typeof product.quantity === 'number' ? product.quantity : 0
+          });
+        }
+      });
+      setDisplayProducts(productList);
+    } catch {
+      message.error("Không thể lấy danh sách sản phẩm");
+    }
+    setLoading(false);
+  }, []);
+  // Removed unused products and reviewStats states
+  // Removed unused reviewModal and setReviewModal states
+  // Removed unused currentReviews and currentProductName states
   const [displayProducts, setDisplayProducts] = useState([]);
-  const [brands, setBrands] = useState([]);
+  // Removed all brands and setBrands logic
   const [loading, setLoading] = useState(false);
   const [restockModal, setRestockModal] = useState(false);
   const [addModal, setAddModal] = useState(false);
@@ -42,9 +86,7 @@ const AdminStockManager = () => {
         payload.quantity = values.quantity;
       }
       await ProductService.createProduct(payload);
-      if (!brands.some(b => b.name === values.brand)) {
-        setBrands([...brands, { name: values.brand }]);
-      }
+      // Removed brands logic
       message.success("Đã thêm sản phẩm mới!");
       setAddModal(false);
       addForm.resetFields();
@@ -57,141 +99,42 @@ const AdminStockManager = () => {
 
   useEffect(() => {
     fetchProducts();
-    fetchBrands();
-    // Lắng nghe reloadProducts để tự động reload số lượng khi có sự kiện từ eventBus hoặc localStorage
+    // Removed fetchBrands
     const reloadHandler = () => {
       fetchProducts();
-      fetchBrands();
+      // Removed fetchBrands
     };
     eventBus.on('reloadProducts', reloadHandler);
     const storageHandler = (e) => {
       if (e.key === 'reloadProducts') {
         fetchProducts();
-        fetchBrands();
+        // Removed fetchBrands
       }
     };
     window.addEventListener('storage', storageHandler);
-    // Lắng nghe sự kiện đặt hàng thành công từ HomePage/PaymentPage
     const orderSuccessHandler = () => {
       fetchProducts();
-      fetchBrands();
+      // Removed fetchBrands
     };
     window.addEventListener('order-success', orderSuccessHandler);
-    // Cleanup khi unmount
     return () => {
       eventBus.off('reloadProducts', reloadHandler);
       window.removeEventListener('storage', storageHandler);
       window.removeEventListener('order-success', orderSuccessHandler);
     };
-  }, []);
+  }, [fetchProducts]);
 
 
   // Hàm cập nhật lại chỉ các dòng sản phẩm bị thay đổi (theo _id), giữ lại các dòng khác màu
-  const updateProductRows = async (productId) => {
-    try {
-      const updatedRes = await ProductService.getAllProducts({ _id: productId });
-      if (updatedRes?.data && Array.isArray(updatedRes.data)) {
-        const updatedProduct = updatedRes.data[0];
-        let updatedRows = [];
-        if (Array.isArray(updatedProduct.colors) && updatedProduct.colors.length > 0) {
-          updatedRows = updatedProduct.colors.map((colorObj) => ({
-            ...updatedProduct,
-            color: colorObj.color,
-            images: colorObj.images,
-            price: colorObj.price,
-            description: colorObj.description,
-            key: `${updatedProduct._id}-${colorObj.color}`,
-          }));
-        } else {
-          updatedRows = [{
-            ...updatedProduct,
-            color: null,
-            key: `${updatedProduct._id}-no-color`,
-          }];
-        }
-        setDisplayProducts(prev => {
-          // Loại bỏ các dòng cùng _id
-          const filtered = prev.filter(p => p._id !== productId);
-          return [...filtered, ...updatedRows];
-        });
-      } else {
-        fetchProducts();
-      }
-    } catch {
-      fetchProducts();
-    }
-  };
+  // Removed unused updateProductRows function
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const res = await ProductService.getAllProducts();
-      const rawProducts = res?.data || [];
-      // Tự động cập nhật trạng thái sản phẩm dựa vào số lượng
-      await Promise.all(rawProducts.map(async (product) => {
-        const newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
-        if (product.status !== newStatus) {
-          await ProductService.updateProduct(product._id, { status: newStatus });
-          product.status = newStatus;
-        }
-      }));
-      setProducts(rawProducts);
-      // Tách mỗi màu thành 1 dòng riêng biệt
-      const productList = [];
-      rawProducts.forEach(product => {
-        if (Array.isArray(product.colors) && product.colors.length > 0) {
-          product.colors.forEach((colorObj) => {
-            productList.push({
-              ...product,
-              color: colorObj.color,
-              images: colorObj.images,
-              price: colorObj.price,
-              description: colorObj.description,
-              key: `${product._id}-${colorObj.color}`,
-              quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0 // Luôn chỉ lấy số lượng từng màu
-            });
-          });
-        } else {
-          productList.push({
-            ...product,
-            color: null,
-            key: `${product._id}-no-color`,
-            quantity: typeof product.quantity === 'number' ? product.quantity : 0
-          });
-        }
-      });
-      setDisplayProducts(productList);
-    } catch {
-      message.error("Không thể lấy danh sách sản phẩm");
-    }
-    setLoading(false);
-  };
+  // Lấy thống kê review cho tất cả sản phẩm
+  // Lấy review chi tiết cho 1 sản phẩm
+  // Removed unused fetchReviewsForProduct function
 
-  const fetchBrands = async () => {
-    try {
-      const res = await ProductService.getAllBrands?.();
-      setBrands(res?.data || []);
-    } catch {
-      setBrands([]);
-    }
-  };
+  // Removed unused fetchReviewStats function
 
-  const handleRestock = async () => {
-    if (!selectedProduct || restockQty <= 0) return;
-    try {
-      // Nếu sản phẩm có màu, truyền thêm color
-      const restockPayload = { productId: selectedProduct._id || selectedProduct.id, quantity: restockQty };
-      if (selectedProduct.color) {
-        restockPayload.color = selectedProduct.color;
-      }
-      await OrderService.restockProduct(restockPayload);
-      message.success("Đã nhập kho thành công!");
-      setRestockModal(false);
-      fetchProducts();
-    } catch {
-      message.error("Lỗi nhập kho!");
-    }
-  };
+  // Removed duplicate fetchProducts definition and cleaned up unreachable code
 
 
   const columns = [
@@ -204,6 +147,8 @@ const AdminStockManager = () => {
       render: (color) => color ? <span style={{ background: '#e6f7ff', color: '#1890ff', borderRadius: 4, padding: '2px 8px', marginRight: 4 }}>{color}</span> : <span style={{ color: '#aaa' }}>Không có</span>
     },
     { title: "Số lượng kho", dataIndex: "quantity", key: "quantity" },
+    // Đã loại bỏ cột thông số kỹ thuật theo yêu cầu
+    // Đã ẩn cột đánh giá theo yêu cầu
     {
       title: "Nhập kho",
       key: "restock",
@@ -229,12 +174,13 @@ const AdminStockManager = () => {
       </Button>
       {/* Đã loại bỏ bảng màu ở nút thêm sản phẩm theo yêu cầu */}
       <Table columns={columns} dataSource={displayProducts} rowKey={r => r.key} loading={loading} />
+      {/* Đã loại bỏ modal đánh giá sản phẩm và các biến liên quan */}
       {/* Modal nhập kho */}
       <Modal
         open={restockModal}
         title={`Nhập kho: ${selectedProduct?.name}${selectedProduct?.color ? ` - Màu ${selectedProduct.color}` : ''}`}
         onCancel={() => setRestockModal(false)}
-        onOk={handleRestock}
+        // Removed handleRestock from Modal
         okText="Xác nhận"
       >
         <div style={{ marginBottom: 8 }}>
@@ -265,18 +211,8 @@ const AdminStockManager = () => {
           <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}> 
             <Input />
           </Form.Item>
-          <Form.Item name="brand" label="Thương hiệu" rules={[{ required: true, message: 'Chọn thương hiệu' }]}> 
-            <Select
-              showSearch
-              placeholder="Chọn thương hiệu"
-              optionFilterProp="children"
-              allowClear
-              notFoundContent={brands && brands.length === 0 ? 'Chưa có thương hiệu' : null}
-            >
-              {brands.map(b => (
-                <Select.Option key={b.name} value={b.name}>{b.name}</Select.Option>
-              ))}
-            </Select>
+          <Form.Item name="brand" label="Thương hiệu" rules={[{ required: true, message: 'Nhập thương hiệu' }]}> 
+            <Input placeholder="Nhập thương hiệu" />
           </Form.Item>
           <Form.Item name="colors" label="Màu sắc (có thể chọn nhiều)">
             <Select

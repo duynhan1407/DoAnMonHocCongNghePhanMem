@@ -100,7 +100,9 @@ const loginUser = async (userLogin) => {
             refresh_token,
             user: {
                 id: checkUser.id,
-                name: checkUser.name,
+                name: checkUser.name || checkUser.username || checkUser.fullName || checkUser.email || 'Không xác định',
+                username: checkUser.username || '',
+                fullName: checkUser.fullName || '',
                 email: checkUser.email,
                 isAdmin: isAdmin
             }

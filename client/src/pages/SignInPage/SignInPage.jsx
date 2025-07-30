@@ -17,6 +17,7 @@ const SignInPage = () => {
   const navigate = useNavigate();
 
   // Kiểm tra nếu đã đăng nhập và token hợp lệ
+
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
@@ -28,7 +29,21 @@ const SignInPage = () => {
         if (expiryTime > currentTime) {
           // Token còn hiệu lực, thực hiện lấy thông tin người dùng
           if (decoded?.id) {
-            handleGetDetailUser(decoded.id, token);
+            (async () => {
+              const user = await handleGetDetailUser(decoded.id, token);
+              // Nếu đã đăng nhập mà chưa có userName trong localStorage thì lưu lại
+              if (user) {
+                let userName = 'Không xác định';
+                if (user.name && typeof user.name === 'string') userName = user.name;
+                else if (user.username && typeof user.username === 'string') userName = user.username;
+                else if (user.fullName && typeof user.fullName === 'string') userName = user.fullName;
+                else if (user.email && typeof user.email === 'string') userName = user.email;
+                if (!localStorage.getItem('userName')) {
+                  localStorage.setItem('userName', userName);
+                  console.log('Đã lưu userName vào localStorage khi khởi động:', userName);
+                }
+              }
+            })();
           }
         } else {
           // Token đã hết hạn, làm mới token
@@ -66,14 +81,23 @@ const SignInPage = () => {
         if (decoded?.id) {
           // Lấy thông tin người dùng sau khi đăng nhập
           const user = await handleGetDetailUser(decoded.id, access_token);
+          // Lưu tên user vào localStorage để dùng cho review (luôn lưu trước khi chuyển trang)
+          let userName = 'Không xác định';
+          if (user) {
+            if (user.name && typeof user.name === 'string') userName = user.name;
+            else if (user.username && typeof user.username === 'string') userName = user.username;
+            else if (user.fullName && typeof user.fullName === 'string') userName = user.fullName;
+            else if (user.email && typeof user.email === 'string') userName = user.email;
+          }
+          localStorage.setItem('userName', userName);
+          console.log('Đã lưu userName vào localStorage:', localStorage.getItem('userName'));
 
+          // Chuyển hướng sau khi đã lưu userName
           if (user?.isProfileUpdated) {
-            // Nếu thông tin người dùng đã được cập nhật, chuyển hướng tới trang chủ
             message.success('Đăng nhập thành công!');
-            navigate('/'); // Điều hướng về trang chủ
+            navigate('/');
           } else {
-            // Nếu chưa cập nhật thông tin, chuyển hướng tới trang cập nhật thông tin
-            navigate('/profile'); // Điều hướng tới trang cập nhật thông tin người dùng
+            navigate('/profile');
           }
         }
       } else {

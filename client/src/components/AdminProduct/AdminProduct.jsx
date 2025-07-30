@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import * as CategoryService from '../../services/CategoryService';
 import eventBus from '../../utils/eventBus';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,12 +19,19 @@ import {
   Badge,
   Tag,
 } from "antd";
-import { SearchOutlined, EyeOutlined, PlusOutlined, UploadOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
-import { getAllProducts, createProduct, updateProduct, deleteProduct, getAllBrands as getAllBrandsFromProduct } from '../../services/ProductService';
+import { getAllProducts, updateProduct, deleteProduct } from '../../services/ProductService';
 import { getAllBrands, createBrand } from '../../services/BrandService';
 
 function QuanLySanPham() {
+  // Hàm chuẩn hóa mô tả sản phẩm phía frontend
+  function normalizeDescription(desc) {
+    if (typeof desc !== 'string') return '';
+    if (desc.includes(':')) return desc;
+    let lines = desc.split(/\n|\r|<br\s*\/?/).map(line => line.trim()).filter(line => line);
+    return lines.join('\n');
+  }
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
@@ -34,7 +42,7 @@ function QuanLySanPham() {
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
-  const [detailProduct, setDetailProduct] = useState(null);
+  // Removed unused detailProduct state
   const [actionLoading, setActionLoading] = useState(false);
   const searchInput = React.useRef(null);
 
@@ -47,17 +55,17 @@ function QuanLySanPham() {
     { label: "Đã giao hàng", value: "delivered", color: "green" },
   ];
 
-  const categories = [
-    { label: "Nam", value: "nam" },
-    { label: "Nữ", value: "nu" },
-    { label: "Cặp đôi", value: "capdoi" },
-  ];
+  // Lấy danh mục từ backend (CategoryService)
+  const [categories, setCategories] = useState([]);
+  useEffect(() => {
+    CategoryService.getAllCategories().then(res => {
+      setCategories(res?.data?.map(c => ({ label: c.name, value: c.name })) || []);
+    });
+  }, []);
 
   // Fetch product data
   const [brands, setBrands] = useState([]);
-  const [newBrandInput, setNewBrandInput] = useState("");
-  const [productNamesInStock, setProductNamesInStock] = useState([]);
-  const [productBrandMap, setProductBrandMap] = useState({});
+  // Removed unused states for newBrandInput, productNamesInStock, productBrandMap
   // Hiển thị mỗi màu là 1 dòng riêng biệt với số lượng riêng
   const fetchProducts = async (params = {}) => {
     setLoading(true);
@@ -121,24 +129,7 @@ function QuanLySanPham() {
     }
   };
 
-  // Lấy danh sách tên sản phẩm từ kho (quantity > 0)
-  // (Retain for modal logic, but only for update, not creation)
-  const fetchProductNamesInStock = async () => {
-    try {
-      const res = await getAllProducts();
-      if (res?.data && Array.isArray(res.data)) {
-        const filtered = res.data.filter(p => (p.quantity || 0) > 0);
-        const names = filtered.map(p => p.name);
-        setProductNamesInStock([...new Set(names)]);
-        // Map tên sản phẩm sang brand
-        const map = {};
-        filtered.forEach(p => {
-          if (p.name && p.brand) map[p.name] = p.brand;
-        });
-        setProductBrandMap(map);
-      }
-    } catch {}
-  };
+  // Removed unused fetchProductNamesInStock, setProductNamesInStock, setProductBrandMap
 
 
   useEffect(() => {
@@ -163,11 +154,7 @@ function QuanLySanPham() {
   }, [pagination.current, pagination.pageSize]);
 
   // Lấy tên sản phẩm từ kho khi mở modal tạo/sửa sản phẩm
-  useEffect(() => {
-    if (isModalOpen) {
-      fetchProductNamesInStock();
-    }
-  }, [isModalOpen]);
+  // Removed useEffect for fetchProductNamesInStock
 
   // Lấy brands từ backend khi mở modal
   const fetchBrands = async () => {
@@ -247,28 +234,7 @@ function QuanLySanPham() {
   };
 
   // Thêm vào giỏ hàng (localStorage)
-  const handleAddToCart = (product) => {
-    if (!product) return;
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    // Nếu đã có sản phẩm cùng id và màu thì tăng số lượng, ngược lại thêm mới
-    const idx = cart.findIndex(
-      (item) => item._id === product._id && item.color === product.color
-    );
-    if (idx > -1) {
-      cart[idx].quantity = (cart[idx].quantity || 1) + 1;
-    } else {
-      cart.push({
-        _id: product._id,
-        name: product.name,
-        price: product.price,
-        image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : product.image,
-        color: product.color,
-        quantity: 1,
-      });
-    }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    message.success('Đã thêm vào giỏ hàng!');
-  };
+  // Removed unused handleAddToCart function
 
   const handleFormSubmit = async (values) => {
     setActionLoading(true);
@@ -287,6 +253,12 @@ function QuanLySanPham() {
           productData.image = productData.images[0];
         }
       }
+
+      // Mô tả là chuỗi textarea, chuẩn hóa xuống backend
+      if (typeof values.description === 'string') {
+        productData.description = normalizeDescription(values.description);
+      }
+
       // Chỉ cập nhật đúng màu đang chọn, không ghi đè toàn bộ mảng colors
       if (Array.isArray(currentProduct.colors) && currentProduct.colors.length > 0 && currentProduct.color) {
         // Tìm index màu đang chọn
@@ -295,12 +267,20 @@ function QuanLySanPham() {
           // Tạo bản sao mảng colors, chỉ cập nhật đúng màu đang chọn
           const newColors = currentProduct.colors.map((c, i) => {
             if (i === idx) {
+              // Discount không bắt buộc nhập, nếu không nhập thì giữ discount cũ
+              let discountValue = c.discount;
+              if (productData.discount !== undefined && productData.discount !== null && productData.discount !== '') {
+                discountValue = productData.discount;
+              }
+              // Serialize technical specs for color description
+              let colorDescription = productData.description;
               return {
                 ...c,
                 images: productData.images,
                 price: productData.price,
-                description: productData.description,
-                quantity: typeof productData.quantity === 'number' ? productData.quantity : c.quantity
+                description: colorDescription,
+                quantity: typeof productData.quantity === 'number' ? productData.quantity : c.quantity,
+                discount: discountValue
               };
             }
             return c;
@@ -403,11 +383,11 @@ function QuanLySanPham() {
     }
     setFileList(imagesArr);
     setIsModalOpen(true);
-    // Khi sửa, chỉ cho phép sửa đúng màu của dòng đó, không ảnh hưởng màu khác
+    // Mô tả là chuỗi, set thẳng vào form
     if (record._id) {
-      form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [] });
+      form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [], description: record.description || '' });
     } else {
-      form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [] });
+      form.setFieldsValue({ ...record, colors: record.color ? [record.color] : [], description: record.description || '' });
     }
   };
 
@@ -453,27 +433,75 @@ function QuanLySanPham() {
       ...getColumnSearchProps("name", "tên sản phẩm"),
     },
     {
+      title: "Danh mục",
+      dataIndex: "category",
+      key: "category",
+      render: (cat) => cat || "",
+    },
+    {
       title: "Màu sắc",
       dataIndex: "color",
       key: "color",
       render: (color) => color ? <Tag color="blue">{color}</Tag> : <Tag color="default">Không có</Tag>
     },
     {
+      title: "Số lượng kho",
+      dataIndex: "quantity",
+      key: "quantity",
+      render: (qty) => qty > 0
+        ? <Badge count={qty} style={{ backgroundColor: '#52c41a' }} />
+        : <Badge count={0} style={{ backgroundColor: '#f5222d' }} text={<Tag color="red">Hết hàng</Tag>} />
+    },
+    {
+      title: "Thông số kỹ thuật",
+      dataIndex: "description",
+      key: "description",
+      render: (desc) => desc ? (
+        <ul style={{ fontSize: 14, color: '#444', lineHeight: 1.6, paddingLeft: 18, margin: 0 }}>
+          {desc.split(/\n|\r|<br\s*\/?/).filter(line => line.trim()).map((line, idx) => (
+            <li key={idx} style={{ marginBottom: 2 }}>{line}</li>
+          ))}
+        </ul>
+      ) : <span style={{ color: '#888' }}>Không có thông số</span>
+    },
+    {
       title: "Giá tiền",
       dataIndex: "price",
       key: "price",
       sorter: (a, b) => a.price - b.price,
-      render: (price) =>
-        price !== undefined && price !== null
-          ? `${Number(price).toLocaleString("vi-VN")} ₫`
-          : "",
+      render: (price, record) => {
+        let discount = 0;
+        if (record.color && Array.isArray(record.colors)) {
+          const colorObj = record.colors.find(c => c.color === record.color);
+          discount = colorObj && typeof colorObj.discount === 'number' ? colorObj.discount : 0;
+        } else {
+          discount = typeof record.discount === 'number' ? record.discount : 0;
+        }
+        if (typeof price === 'number') {
+          if (discount > 0) {
+            const salePrice = price * (1 - discount / 100);
+            return <span style={{ color: '#ff1744', fontWeight: 700 }}>{salePrice.toLocaleString('vi-VN')} ₫</span>;
+          } else {
+            return `${price.toLocaleString('vi-VN')} ₫`;
+          }
+        }
+        return "";
+      },
     },
     {
       title: "Giảm giá (%)",
       dataIndex: "discount",
       key: "discount",
       sorter: (a, b) => (a.discount || 0) - (b.discount || 0),
-      render: (discount) => (discount ? `${discount}%` : "Không có giảm giá"),
+      render: (discount, record) => {
+        // Nếu có màu, chỉ hiển thị discount của đúng màu đó
+        if (record.color && Array.isArray(record.colors)) {
+          const colorObj = record.colors.find(c => c.color === record.color);
+          return colorObj && typeof colorObj.discount === 'number' ? `${colorObj.discount}%` : '0%';
+        }
+        // Nếu không có màu, hiển thị discount của sản phẩm
+        return discount ? `${discount}%` : '0%';
+      },
     },
     {
       title: "Trạng thái",
@@ -567,10 +595,7 @@ function QuanLySanPham() {
     },
   ];
 
-  // Đóng modal chi tiết sản phẩm
-  const handleCloseDetail = () => {
-    setDetailProduct(null);
-  };
+  // Removed unused handleCloseDetail and setDetailProduct
 
   return (
     <Card
@@ -671,7 +696,7 @@ function QuanLySanPham() {
           <Form.Item
             name="discount"
             label="Giảm giá (%)"
-            rules={[{ required: true, message: "Vui lòng nhập giảm giá!" }]}
+            rules={[{ required: false }]}
           >
             <InputNumber min={0} max={100} style={{ width: "100%" }} />
           </Form.Item>
@@ -719,8 +744,8 @@ function QuanLySanPham() {
               disabled={true}
             />
           </Form.Item>
-          <Form.Item name="description" label="Mô tả">
-            <Input.TextArea rows={4} />
+          <Form.Item name="description" label="Mô tả sản phẩm">
+            <Input.TextArea rows={6} placeholder="Nhập mô tả sản phẩm, mỗi dòng là một thông số kỹ thuật hoặc mô tả chi tiết." />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={actionLoading} style={{ width: 160 }}>

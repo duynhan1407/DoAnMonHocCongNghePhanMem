@@ -13,12 +13,11 @@ const Navbar = () => {
   const [brands, setBrands] = useState([]);
 
   useEffect(() => {
-    // Fetch all products and extract unique categories
-    ProductService.getAllProducts().then(res => {
-      if (res?.data) {
-        const cats = Array.from(new Set(res.data.map(r => r.category).filter(Boolean)));
-        setCategories(cats);
-      }
+    // Lấy danh mục từ backend
+    import('../../services/CategoryService').then(({ getAllCategories }) => {
+      getAllCategories().then(res => {
+        setCategories(res?.data?.map(c => c.name) || []);
+      });
     });
     // Fetch all brands
     BrandService.getAllBrands().then(res => {
@@ -30,7 +29,12 @@ const Navbar = () => {
 
   // Handler for selecting a category
   const handleCategorySelect = (cat) => {
-    navigate(`/?category=${encodeURIComponent(cat)}`);
+    // Nếu chọn đồng hồ nam thì chuyển về HomePage với category=nam
+    if (cat === 'nam') {
+      navigate(`/?category=nam`);
+    } else {
+      navigate(`/?category=${encodeURIComponent(cat)}`);
+    }
   };
   // Handler for selecting a brand
   const handleBrandSelect = (brand) => {

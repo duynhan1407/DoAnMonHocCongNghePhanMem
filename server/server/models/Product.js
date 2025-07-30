@@ -22,10 +22,7 @@ const ProductSchema = new Schema({
   description: {
     type: String
   },
-  rating: {
-    type: Number,
-    default: 0
-  },
+
 
   
 

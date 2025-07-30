@@ -53,13 +53,26 @@ const OrderInfoPage = () => {
         <Input name="notes" value={form.notes} onChange={handleChange} style={{ marginBottom: 16 }} />
       </Card>
       <Card title={`Sản phẩm (${cart.length} sản phẩm)`} style={{ marginBottom: 24 }}>
-        {cart.map((item, idx) => (
-          <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-            <img src={item.images?.[0] || '/assets/images/no-image.png'} alt={item.name} style={{ width: 48, height: 48, objectFit: 'contain', marginRight: 12 }} />
-            <span style={{ fontWeight: 600 }}>{item.name}</span>
-            <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 600 }}>{item.price?.toLocaleString('vi-VN')}₫</span>
-          </div>
-        ))}
+        {cart.map((item, idx) => {
+          let discount = 0;
+          if (item.color && Array.isArray(item.colors)) {
+            const colorObj = item.colors.find(c => c.color === item.color);
+            discount = colorObj && typeof colorObj.discount === 'number' ? colorObj.discount : 0;
+          } else {
+            discount = typeof item.discount === 'number' ? item.discount : 0;
+          }
+          let salePrice = item.price;
+          if (typeof item.price === 'number' && discount > 0) {
+            salePrice = item.price * (1 - discount / 100);
+          }
+          return (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+              <img src={item.images?.[0] || '/assets/images/no-image.png'} alt={item.name} style={{ width: 48, height: 48, objectFit: 'contain', marginRight: 12 }} />
+              <span style={{ fontWeight: 600 }}>{item.name}</span>
+              <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 600 }}>{salePrice?.toLocaleString('vi-VN')}₫</span>
+            </div>
+          );
+        })}
       </Card>
       <Button type="primary" style={{ background: '#b4005a', borderColor: '#b4005a', fontWeight: 600, fontSize: 18, width: '100%' }} onClick={handleConfirm}>
         Xác nhận thông tin của khách hàng

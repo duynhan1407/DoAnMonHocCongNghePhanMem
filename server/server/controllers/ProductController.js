@@ -60,9 +60,43 @@ exports.updateProduct = async (req, res) => {
       // Không cập nhật product.quantity tổng nếu có màu
       delete req.body.quantity;
     }
+    // Hàm chuẩn hóa mô tả sản phẩm
+    function normalizeDescription(desc) {
+        const fieldMap = [
+            { regex: /^0:/, name: 'Chất liệu vỏ' },
+            { regex: /^1:/, name: 'Kích thước vỏ' },
+            { regex: /^2:/, name: 'Cấu trúc' },
+            { regex: /^3:/, name: 'Trọng lượng' },
+            { regex: /^4:/, name: 'Dây đeo' },
+            // Thêm các trường khác nếu cần
+        ];
+        if (typeof desc !== 'string') return desc;
+        let lines = desc.split(/\n|\r|<br\s*\/?>/).map(line => line.trim()).filter(line => line);
+        let newLines = lines.map(line => {
+            for (const field of fieldMap) {
+                if (field.regex.test(line)) {
+                    const value = line.split(':').slice(1).join(':').trim();
+                    return `${field.name}: ${value}`;
+                }
+            }
+            return line;
+        });
+        return newLines.join('\n');
+    }
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!product) return res.status(404).json({ status: 'ERR', message: 'Không tìm thấy sản phẩm' });
-    res.status(200).json({ status: 'OK', message: 'Cập nhật thành công', data: product });
+        if (req.body.description) {
+            product.description = normalizeDescription(req.body.description);
+        }
+        // Chuẩn hóa cho từng màu nếu có
+        if (Array.isArray(req.body.colors)) {
+            req.body.colors.forEach((colorObj, idx) => {
+                if (colorObj.description) {
+                    product.colors[idx].description = normalizeDescription(colorObj.description);
+                }
+            });
+        }
+        res.status(200).json({ status: 'OK', message: 'Cập nhật thành công', data: product });
   } catch (error) {
     res.status(500).json({ status: 'ERR', message: error.message });
   }

@@ -1,7 +1,7 @@
 import { Menu } from 'antd';
 import React, { useState } from 'react';
 import { getItem } from '../../until';
-import { UserOutlined, InboxOutlined } from '@ant-design/icons';
+import { UserOutlined, InboxOutlined, StarOutlined } from '@ant-design/icons';
 import { ShopOutlined } from '@ant-design/icons';
 import AdminStockManager from '../../components/AdminStock/AdminStockManager';
 import AdminUser from '../../components/AdminUser/AdminUser';
@@ -10,15 +10,19 @@ import AdminOrder from '../../components/AdminOrder/AdminOrder';
 import AdminDashboard from './AdminDashboard';
 import ExportRevenue from './ExportRevenue';
 import BrandComponent from '../../components/BrandComponent/BrandComponent';
+import AdminCategory from '../../components/AdminCategory/AdminCategory';
+import AdminReviewPage from '../AdminReviewPage';
 
 const AdminPage = () => {
   const menuItems = [
-  getItem('Dashboard', 'dashboard', <InboxOutlined />),
-  getItem('Người dùng', 'user', <UserOutlined />),
-  getItem('Sản phẩm', 'product', <InboxOutlined />),
-  getItem('Đơn hàng', 'order', <InboxOutlined />),
-  getItem('Thương hiệu', 'brand', <InboxOutlined />),
-  getItem('Quản lý kho', 'stock', <ShopOutlined />),
+    getItem('Dashboard', 'dashboard', <InboxOutlined />),
+    getItem('Người dùng', 'user', <UserOutlined />),
+    getItem('Sản phẩm', 'product', <InboxOutlined />),
+    getItem('Đơn hàng', 'order', <InboxOutlined />),
+    getItem('Thương hiệu', 'brand', <InboxOutlined />),
+    getItem('Quản lý danh mục', 'category', <InboxOutlined />),
+    getItem('Quản lý kho', 'stock', <ShopOutlined />),
+    getItem('Quản lý đánh giá', 'review', <StarOutlined />),
   ];
 
   const [selectedKey, setSelectedKey] = useState('dashboard'); // Default to dashboard
@@ -39,8 +43,12 @@ const AdminPage = () => {
         return <AdminOrder />;
       case 'brand':
         return <BrandComponent />;
+      case 'category':
+        return <AdminCategory />;
       case 'stock':
         return <AdminStockManager />;
+      case 'review':
+        return <AdminReviewPage />;
       default:
         return <h2 style={{ textAlign: 'center' }}>Vui lòng chọn một mục từ menu</h2>;
     }

@@ -2,8 +2,22 @@ import React from 'react';
 import { InputNumber } from 'antd';
 
 const CartComponent = ({ cart, onCheckout, onRemove, loading, onChangeQuantity }) => {
-  // Tính tổng tiền dựa trên số lượng và giá từng sản phẩm
-  const total = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
+  // Tính tổng tiền dựa trên số lượng và giá sau giảm giá từng sản phẩm
+  const getDiscount = (item) => {
+    if (item.color && Array.isArray(item.colors)) {
+      const colorObj = item.colors.find(c => c.color === item.color);
+      return colorObj && typeof colorObj.discount === 'number' ? colorObj.discount : 0;
+    }
+    return typeof item.discount === 'number' ? item.discount : 0;
+  };
+  const getSalePrice = (item) => {
+    const discount = getDiscount(item);
+    if (typeof item.price === 'number' && discount > 0) {
+      return item.price * (1 - discount / 100);
+    }
+    return item.price;
+  };
+  const total = cart.reduce((sum, item) => sum + (getSalePrice(item) * (item.quantity || 1)), 0);
   return (
     <div
       style={{
@@ -35,14 +49,16 @@ const CartComponent = ({ cart, onCheckout, onRemove, loading, onChangeQuantity }
                 transition: 'background 0.2s',
               }}
               tabIndex={0}
-              aria-label={`Sản phẩm ${item.name}, giá ${Number(item.price).toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}đ`}
+              aria-label={`Sản phẩm ${item.name}, giá ${getSalePrice(item).toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}đ`}
               onMouseOver={e => (e.currentTarget.style.background = '#e6fcfa')}
               onMouseOut={e => (e.currentTarget.style.background = '#f8f8f8')}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 16 }}>
                   <b>{item.name}</b> {item.brand && `- ${item.brand}`} - {
-                    Number(item.price).toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + 'đ'
+                    getDiscount(item) > 0
+                      ? <span style={{ color: '#ff1744', fontWeight: 700 }}>{getSalePrice(item).toLocaleString('vi-VN')}đ</span>
+                      : getSalePrice(item).toLocaleString('vi-VN') + 'đ'
                   }
                   <span style={{ marginLeft: 12, marginRight: 8 }}>
                     <InputNumber

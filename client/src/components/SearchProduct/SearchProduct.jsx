@@ -1,32 +1,43 @@
-import React, { useState } from 'react';
-import { Input, Button, Select, Row, Col, Table, message } from 'antd';
+// Đã có import React ở trên, xóa dòng này
+// Đã có import các component Ant Design ở trên, xóa dòng này
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+// Đã có import useLocation ở trên, xóa dòng này
 import { Input, Button, Select, Row, Col, Table, message } from 'antd';
 import * as ProductService from '../../services/ProductService';
+import * as CategoryService from '../../services/CategoryService';
 
 const { Search } = Input;
 
+// Đã có import useLocation ở trên, xóa dòng này
+
 function TimKiemSanPham() {
+    const [categoryMap, setCategoryMap] = useState({});
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [category, setCategory] = useState('');
+    const [categories, setCategories] = useState([]);
     const [priceMin, setPriceMin] = useState('');
     const [priceMax, setPriceMax] = useState('');
     const [status, setStatus] = useState('');
     const [rating, setRating] = useState('');
+    const [discount, setDiscount] = useState('');
+    const location = useLocation();
 
-    const handleSearch = async () => {
+    // Đặt handleSearch lên trước useEffect để tránh lỗi ReferenceError
+    const handleSearch = async (catOverride) => {
         setLoading(true);
         try {
-            const response = await ProductService.searchProducts({
+            const response = await ProductService.getAllProducts({
                 name: searchTerm,
-                category,
+                category: catOverride || category,
                 priceMin,
                 priceMax,
                 status,
-                rating
+                rating,
+                discount
             });
             setProducts(response?.data || []);
         } catch (error) {
@@ -36,9 +47,30 @@ function TimKiemSanPham() {
         }
     };
 
+    // Tự động tìm kiếm nếu có query category=nam
+    useEffect(() => {
+    // Lấy danh mục từ backend
+    CategoryService.getAllCategories()
+      .then(res => {
+        setCategories(res?.data?.map(c => c.name) || []);
+        // Tạo map id -> name nếu backend trả về id, hoặc map name -> name
+        const map = {};
+        (res?.data || []).forEach(c => {
+          map[c.name] = c.name;
+        });
+        setCategoryMap(map);
+      });
+        const params = new URLSearchParams(location.search);
+        const cat = params.get('category');
+        if (cat) {
+            setCategory(cat);
+            handleSearch(cat);
+        }
+    }, [location.search, handleSearch]);
+
     const columns = [
         { title: 'Tên sản phẩm', dataIndex: 'name', key: 'name' },
-        { title: 'Danh mục', dataIndex: 'category', key: 'category', render: v => v === 'nam' ? 'Nam' : v === 'nu' ? 'Nữ' : v === 'capdoi' ? 'Cặp đôi' : v },
+        { title: 'Danh mục', dataIndex: 'category', key: 'category', render: v => categoryMap[v] || v },
         { title: 'Giá tiền', dataIndex: 'price', key: 'price', render: price => price ? Number(price).toLocaleString('vi-VN') + ' ₫' : '' },
         { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: v => v === 'Available' ? 'Còn hàng' : v === 'OutOfStock' ? 'Hết hàng' : v },
         { title: 'Đánh giá', dataIndex: 'rating', key: 'rating' },
@@ -63,9 +95,9 @@ function TimKiemSanPham() {
                         style={{ width: '100%' }}
                     >
                         <Select.Option value="">Tất cả</Select.Option>
-                        <Select.Option value="nam">Đồng hồ Nam</Select.Option>
-                        <Select.Option value="nu">Đồng hồ Nữ</Select.Option>
-                        <Select.Option value="capdoi">Đồng hồ Cặp đôi</Select.Option>
+                        {categories.map(cat => (
+                          <Select.Option key={cat} value={cat}>{cat}</Select.Option>
+                        ))}
                     </Select>
                 </Col>
                 <Col span={8}>
@@ -103,6 +135,13 @@ function TimKiemSanPham() {
                         max={5}
                         value={rating}
                         onChange={(e) => setRating(e.target.value)}
+                    />
+                </Col>
+                <Col span={8}>
+                    <Input
+                        placeholder="Mã giảm giá (discount)"
+                        value={discount}
+                        onChange={(e) => setDiscount(e.target.value)}
                     />
                 </Col>
                 <Col span={24} style={{ marginTop: 16 }}>

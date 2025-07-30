@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Row, Col, Input, Select, Pagination, Button, Modal, Rate, message, Spin, DatePicker, Space } from "antd";
+import * as CategoryService from "../services/CategoryService";
 import dayjs from "dayjs";
 import * as ProductService from "../services/ProductService";
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +12,7 @@ const ProductList = () => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 8, total: 0 });
   const [filters, setFilters] = useState({ search: "", category: "", status: "" });
+  const [categories, setCategories] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -36,6 +38,8 @@ const ProductList = () => {
   };
 
   useEffect(() => {
+    // Lấy danh mục từ backend
+    CategoryService.getAllCategories().then(res => setCategories(res?.data?.map(c => c.name) || []));
     fetchProducts(filters);
     // eslint-disable-next-line
   }, [pagination.current, pagination.pageSize, filters]);
@@ -100,9 +104,9 @@ const ProductList = () => {
             style={{ width: '100%' }}
           >
             <Option value="">Tất cả</Option>
-            <Option value="nam">Đồng hồ Nam</Option>
-            <Option value="nu">Đồng hồ Nữ</Option>
-            <Option value="capdoi">Đồng hồ Cặp đôi</Option>
+            {categories.map(cat => (
+              <Option key={cat} value={cat}>{cat}</Option>
+            ))}
           </Select>
         </Col>
         <Col span={8}>

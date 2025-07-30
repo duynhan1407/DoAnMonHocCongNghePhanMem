@@ -1,4 +1,16 @@
 import React from 'react';
+import * as CategoryService from '../../services/CategoryService';
+  const [categoryName, setCategoryName] = React.useState(product.category);
+  React.useEffect(() => {
+    if (product?.category) {
+      CategoryService.getAllCategories()
+        .then(res => {
+          const found = res?.data?.find(c => c.name === product.category);
+          setCategoryName(found ? found.name : product.category);
+        })
+        .catch(() => setCategoryName(product.category));
+    }
+  }, [product]);
 const ProductDetailComponent = ({ product }) => {
   if (!product) return <div>Không tìm thấy sản phẩm</div>;
   const images = product.images && product.images.length > 0 ? product.images : [product.image];
@@ -50,13 +62,40 @@ const ProductDetailComponent = ({ product }) => {
             {product.status === 'Available' && <span style={{ background: '#f6ffed', color: '#52c41a', fontWeight: 600, borderRadius: 4, padding: '2px 10px', fontSize: 14 }}>Còn hàng</span>}
           </div>
           {/* Price */}
-          <div style={{ fontSize: 32, fontWeight: 700, color: '#2b46bd', margin: '8px 0 18px 0' }}>
-            {product.price ? product.price.toLocaleString('vi-VN') + ' ₫' : 'Liên hệ để biết giá'}
+          <div style={{ fontSize: 32, fontWeight: 700, margin: '8px 0 18px 0' }}>
+            {(() => {
+              let discount = 0;
+              if (Array.isArray(product.colors) && product.colors.length > 0 && typeof product.colors[0].discount === 'number') {
+                discount = product.colors[0].discount;
+              } else if (typeof product.discount === 'number') {
+                discount = product.discount;
+              }
+              if (typeof product.price === 'number') {
+                if (discount > 0) {
+                  const salePrice = product.price * (1 - discount / 100);
+                  return <><span style={{ color: '#ff1744', fontWeight: 800 }}>{salePrice.toLocaleString('vi-VN')} ₫</span><span style={{ color: '#888', textDecoration: 'line-through', marginLeft: 12 }}>{product.price.toLocaleString('vi-VN')} ₫</span></>;
+                } else {
+                  return <span style={{ color: '#2b46bd' }}>{product.price.toLocaleString('vi-VN')} ₫</span>;
+                }
+              }
+              return 'Liên hệ để biết giá';
+            })()}
           </div>
           {/* Description */}
-          <div style={{ fontSize: 18, color: '#444', marginBottom: 18, lineHeight: 1.6 }}>{product.description || 'Không có mô tả'}</div>
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#2b46bd', marginBottom: 8 }}>Thông tin kỹ thuật</div>
+            {product.description ? (
+              <ul style={{ fontSize: 17, color: '#444', lineHeight: 1.7, paddingLeft: 24, margin: 0 }}>
+                {product.description.split(/\r?\n/).filter(line => line.trim()).map((line, idx) => (
+                  <li key={idx} style={{ marginBottom: 4 }}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <div style={{ fontSize: 16, color: '#888' }}>Không có thông số kỹ thuật</div>
+            )}
+          </div>
           {/* Category */}
-          <div style={{ fontSize: 16, color: '#888', marginBottom: 8 }}>Danh mục: <span style={{ color: '#222', fontWeight: 500 }}>{product.category}</span></div>
+          <div style={{ fontSize: 16, color: '#888', marginBottom: 8 }}>Danh mục: <span style={{ color: '#222', fontWeight: 500 }}>{categoryName}</span></div>
         </div>
       </div>
     </div>

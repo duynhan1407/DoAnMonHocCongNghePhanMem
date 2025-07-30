@@ -24,6 +24,8 @@ require('./services/reminderCron');
 const app = express();
 const port = process.env.PORT || 3001;
 
+const categoryRoutes = require('./routes/CategoryRoutes');
+
 // Kết nối database
 DbConnect();
 // Middleware: Đảm bảo express.json() đứng trước tất cả các route
@@ -38,6 +40,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false },
 }));
+
+// API cho danh mục sản phẩm
+app.use('/api/categories', categoryRoutes);
 app.use(passport.initialize());
 app.use(passport.session());
 
