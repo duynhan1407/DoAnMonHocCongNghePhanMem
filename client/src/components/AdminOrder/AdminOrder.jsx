@@ -152,10 +152,8 @@ const AdminOrder = () => {
       dataIndex: "status",
       key: "status",
       render: (status, record) => {
-        let color = 'default', text = 'Chờ xác nhận';
-        if (status === 'Delivered') { color = 'green'; text = 'Đã giao'; }
-        else if (status === 'Cancelled') { color = 'red'; text = 'Đã hủy'; }
-        else if (status === 'Pending') { color = 'gold'; text = 'Chờ xác nhận'; }
+        // ...existing code...
+        // ...existing code...
         return (
           <Select
             value={status}

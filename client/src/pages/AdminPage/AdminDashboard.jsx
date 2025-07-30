@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { Table, Card, Statistic, Row, Col, DatePicker, Button, message } from 'antd';
 import { BarChartOutlined } from '@ant-design/icons';
 import RevenueChart from '../../components/RevenueChart';
-import moment from 'moment';
+// ...existing code...
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -13,7 +13,7 @@ const AdminDashboard = () => {
   const [dateRange, setDateRange] = useState([null, null]);
   const [showChart, setShowChart] = useState(false);
 
-  const fetchStats = async (startDate, endDate) => {
+  const fetchStats = useCallback(async (startDate, endDate) => {
     setLoading(true);
     try {
       const res = await axios.get('/api/order/stats', {
@@ -30,13 +30,13 @@ const AdminDashboard = () => {
       message.error('Lỗi lấy thống kê đơn hàng!');
     }
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     const start = Array.isArray(dateRange) && dateRange[0] ? dateRange[0] : undefined;
     const end = Array.isArray(dateRange) && dateRange[1] ? dateRange[1] : undefined;
     fetchStats(start, end);
-  }, [dateRange]);
+  }, [dateRange, fetchStats]);
 
   const columns = [
     { title: 'Ngày', dataIndex: 'date', key: 'date' },

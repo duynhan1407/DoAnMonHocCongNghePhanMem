@@ -21,15 +21,7 @@ const BrandComponent = () => {
 
 
   // Hàm cập nhật lại products khi có thay đổi (ví dụ đổi màu, đổi số lượng)
-  const updateBrandRows = async (productId) => {
-    try {
-      const res = await ProductService.getAllProducts();
-      if (res?.data) {
-        const inStockProducts = res.data.filter(p => (p.quantity || 0) > 0);
-        setProducts(inStockProducts);
-      }
-    } catch {}
-  };
+  // ...existing code...
 
   useEffect(() => {
     // Lấy products thực tế, chỉ lấy sản phẩm còn hàng

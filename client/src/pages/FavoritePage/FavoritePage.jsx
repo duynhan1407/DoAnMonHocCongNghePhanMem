@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Card, Button, Tag, Empty, Popconfirm, message, Spin } from 'antd';
+import { Card, Button, Empty, Popconfirm, message, Spin } from 'antd';
 import { removeFromFavorite, clearFavorite } from '../../redux/favoriteSlice';
 import { useNavigate } from 'react-router-dom';
 import * as ProductService from '../../services/ProductService';

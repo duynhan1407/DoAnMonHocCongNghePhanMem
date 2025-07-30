@@ -1,6 +1,6 @@
 // Biểu đồ doanh thu sử dụng recharts. Nếu gặp lỗi, hãy kiểm tra các package phụ thuộc như recharts, react-scripts, webpack, v.v.
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const RevenueChart = ({ data }) => (
   <ResponsiveContainer width="100%" height={380}>

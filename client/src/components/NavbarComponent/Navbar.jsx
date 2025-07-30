@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Dropdown, Menu } from 'antd';
 import { DownOutlined, HeartFilled } from '@ant-design/icons';
-import * as ProductService from '../../services/ProductService';
+// ...existing code...
 import * as BrandService from '../../services/BrandService';
 
 const Navbar = () => {

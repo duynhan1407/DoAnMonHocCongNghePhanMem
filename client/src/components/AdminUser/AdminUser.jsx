@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Button,
   Modal,
@@ -12,11 +12,10 @@ import {
   Row,
   Col,
   Tag,
-  Badge,
   Descriptions,
   Select,
 } from 'antd';
-import { UploadOutlined, PlusOutlined, EyeOutlined, LockOutlined, UnlockOutlined, ReloadOutlined } from '@ant-design/icons';
+import { UploadOutlined, PlusOutlined, EyeOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons';
 import * as UserService from '../../services/UserServices';
 import { Card, Statistic, DatePicker } from 'antd';
 import moment from 'moment';
@@ -36,11 +35,7 @@ const AdminUser = () => {
   const [detailModal, setDetailModal] = useState(false);
   const [detailUser, setDetailUser] = useState(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [dateRange, searchText]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const access_token = localStorage.getItem('access_token');
@@ -70,7 +65,12 @@ const AdminUser = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, searchText]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
 
   const handleFileChange = async ({ fileList: newFileList }) => {
     if (newFileList.length === 0) {

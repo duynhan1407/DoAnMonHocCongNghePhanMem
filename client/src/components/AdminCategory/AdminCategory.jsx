@@ -10,14 +10,12 @@ const AdminCategory = () => {
   const [newCategory, setNewCategory] = useState('');
   const [editCategory, setEditCategory] = useState(null);
   const [editValue, setEditValue] = useState('');
-  const [allProducts, setAllProducts] = useState([]);
+  // ...existing code...
 
   useEffect(() => {
     fetchCategories();
     // Lấy toàn bộ sản phẩm để hiển thị mô tả
-    ProductService.getAllProducts().then(res => {
-      setAllProducts(res?.data || []);
-    });
+    ProductService.getAllProducts(); // Removed setAllProducts, variable no longer exists
   }, []);
 
   const fetchCategories = async () => {

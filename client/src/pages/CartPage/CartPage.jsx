@@ -5,8 +5,7 @@ import CartComponent from '../../components/CartComponent/CartComponent';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 
-import * as OrderService from '../../services/OrderService';
-import { message } from 'antd';
+// ...existing code...
 // import * as PaymentService from '../../services/PaymentService';
 import { Modal } from 'antd';
 import { setUser } from '../../redux/Slide/userSlide';
@@ -33,7 +32,7 @@ const CartPage = () => {
     return initialCart.map(item => ({ ...item, productId: item.productId || item._id }));
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   // Luôn đồng bộ localStorage với state cart
   useEffect(() => {

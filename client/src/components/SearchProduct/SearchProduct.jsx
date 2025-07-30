@@ -1,7 +1,7 @@
 // Đã có import React ở trên, xóa dòng này
 // Đã có import các component Ant Design ở trên, xóa dòng này
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 // Đã có import useLocation ở trên, xóa dòng này
 import { Input, Button, Select, Row, Col, Table, message } from 'antd';
@@ -27,7 +27,7 @@ function TimKiemSanPham() {
     const location = useLocation();
 
     // Đặt handleSearch lên trước useEffect để tránh lỗi ReferenceError
-    const handleSearch = async (catOverride) => {
+    const handleSearch = useCallback(async (catOverride) => {
         setLoading(true);
         try {
             const response = await ProductService.getAllProducts({
@@ -45,7 +45,7 @@ function TimKiemSanPham() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, category, priceMin, priceMax, status, rating, discount, setLoading, setProducts]);
 
     // Tự động tìm kiếm nếu có query category=nam
     useEffect(() => {

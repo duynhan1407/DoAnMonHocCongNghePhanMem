@@ -12,7 +12,7 @@ const PaymentPage = () => {
   const user = useSelector((state) => state.user);
   const [shipping, setShipping] = useState('local');
   const [discount, setDiscount] = useState('');
-  const [discountApplied, setDiscountApplied] = useState(false);
+  // ...existing code...
   const [loading, setLoading] = useState(false);
 
   const shippingFee = shipping === 'local' ? 40000 : 100000;
@@ -134,7 +134,7 @@ const PaymentPage = () => {
           })}
           <Input.Group compact style={{ marginBottom: 16 }}>
             <Input style={{ width: '70%' }} placeholder="Nhập mã giảm giá" value={discount} onChange={e => setDiscount(e.target.value)} />
-            <Button type="primary" style={{ background: '#b4005a', borderColor: '#b4005a' }} onClick={() => setDiscountApplied(true)}>Áp dụng</Button>
+            <Button type="primary" style={{ background: '#b4005a', borderColor: '#b4005a' }} onClick={() => {/* Áp dụng giảm giá */}}>Áp dụng</Button>
           </Input.Group>
           <div style={{ marginBottom: 8 }}>Tạm tính: <span style={{ float: 'right' }}>{subtotal.toLocaleString('vi-VN')}₫</span></div>
           <div style={{ marginBottom: 8 }}>Phí vận chuyển: <span style={{ float: 'right' }}>{shippingFee.toLocaleString('vi-VN')}₫</span></div>

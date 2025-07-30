@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useQuery } from '@tanstack/react-query';
-import { message, Modal, Input } from 'antd';
-import CardComponent from '../../components/CardComponent/CardComponent';
+import { message } from 'antd';
+// import CardComponent from '../../components/CardComponent/CardComponent';
 import Slider from "react-slick";
 import Navbar from '../../components/NavbarComponent/Navbar';
 import { WrapperProducts, HomeResponsiveButton, HomeResponsiveCard } from './style';
@@ -33,7 +33,7 @@ const HomePage = () => {
     return () => window.removeEventListener('storage', updateCategories);
   }, [updateCategories]);
   // State for search text
-  const [searchText, setSearchText] = useState('');
+  const [searchText] = useState('');
   const location = useLocation();
   // Lọc theo category nếu có query
   const params = new URLSearchParams(location.search);
@@ -81,8 +81,7 @@ const HomePage = () => {
     return (now - created) <= 24 * 60 * 60 * 1000;
   });
   // (removed duplicate navigate)
-  const user = useSelector((state) => state.user);
-  const userId = user?.id || user?._id;
+  // const user = useSelector((state) => state.user);
   const favorite = useSelector((state) => state.favorite.items);
   const dispatch = useDispatch();
 
@@ -106,9 +105,9 @@ const HomePage = () => {
   };
 
   // Khởi tạo giỏ hàng từ localStorage, đảm bảo có productId
-  const [cart, setCart] = useState(() => {
+  const [cart] = useState(() => {
     const stored = localStorage.getItem('cart');
-    let initialCart = stored ? JSON.parse(stored) : [];
+    const initialCart = stored ? JSON.parse(stored) : [];
     return initialCart.map(item => ({ ...item, productId: item.productId || item._id }));
   });
   // ...existing code...
