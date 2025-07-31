@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "server": "nodemon server/index.js",
+    "start": "node server/index.js",
     "client": "cd ../client && npm start",
     "build-client": "cd ../client && npm install && npm run build",
     "build-server": "echo 'No backend build step. Add here if needed.'",
@@ -14,7 +15,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "cloudinary": "^2.7.0",
     "concurrently": "^9.1.0",
@@ -26,6 +27,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.5",
     "nodemon": "^3.1.7",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",

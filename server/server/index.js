@@ -7,7 +7,6 @@ const dotenv = require('dotenv').config();
 const passport = require('./auth/passport');
 const DbConnect = require('./config/dataconn');
 const routes = require('./routes');
-const paymentRoutes = require('./routes/PaymentRoutes');
 const cartRoutes = require('./routes/CartRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderApi = require('./routes/orderApi');
@@ -22,7 +21,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 require('./services/reminderCron');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3010;
 
 const categoryRoutes = require('./routes/CategoryRoutes');
 
@@ -51,8 +50,7 @@ routes(app);
 
 // Route đơn hàng
 app.use('/api/orders', orderApi);
-// Route thanh toán
-app.use('/api/payment', paymentRoutes);
+
 
 // Route giỏ hàng
 app.use('/api/cart', cartRoutes);
