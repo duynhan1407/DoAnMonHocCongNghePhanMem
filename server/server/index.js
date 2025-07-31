@@ -21,7 +21,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 require('./services/reminderCron');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5000;
 
 const categoryRoutes = require('./routes/CategoryRoutes');
 
@@ -48,8 +48,6 @@ app.use(passport.session());
 // Routes chính
 routes(app);
 
-// Route đơn hàng
-app.use('/api/orders', orderApi);
 
 
 // Route giỏ hàng

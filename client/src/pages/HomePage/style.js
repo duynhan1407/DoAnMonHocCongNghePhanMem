@@ -26,14 +26,15 @@ export const WrapperButtonMore = styled(ButtonComponent)`
 export const WrapperProducts = styled.div`
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px 18px;
-    margin-top: 24px;
-    background: linear-gradient(135deg, #f0f8ff 0%, #e0e7ff 100%);
-    border-radius: 12px;
-    padding: 18px 12px;
+    gap: 32px 24px;
+    margin-top: 32px;
+    background: linear-gradient(135deg, #e3f0ff 0%, #f8fbff 100%);
+    border-radius: 18px;
+    padding: 32px 24px;
     justify-items: center;
     align-items: start;
-    
+    box-shadow: 0 4px 24px #e0e7ff44;
+    border: 1.5px solid #e0e7ff;
     @media (max-width: 1200px) {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -53,8 +54,26 @@ export const HomeResponsiveButton = styled(ButtonComponent)`
 `;
 
 export const HomeResponsiveCard = styled.div`
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px #b2f5ea;
+    transition: box-shadow 0.2s, transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 380px;
+    max-height: 420px;
+    height: 100%;
+    box-sizing: border-box;
+    &:hover {
+        box-shadow: 0 8px 32px #00bfae44;
+        transform: translateY(-4px) scale(1.03);
+    }
     @media (max-width: 900px) {
         min-width: 90vw !important;
         max-width: 100vw !important;
+        min-height: 320px;
+        max-height: 420px;
     }
 `;
