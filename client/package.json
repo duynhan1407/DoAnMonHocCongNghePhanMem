@@ -53,7 +53,7 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:3010",
+  
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.1",
@@ -70,7 +70,6 @@
     "recharts": "^3.1.0",
     "semver": "^7.7.2",
     "source-map-loader": "^5.0.0",
-    "webpack": "^5.100.2",
-    "webpack-dev-server": "^5.2.2"
+    "webpack": "^5.100.2"
   }
 }

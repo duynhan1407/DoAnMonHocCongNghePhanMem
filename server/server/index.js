@@ -21,7 +21,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 require('./services/reminderCron');
 
 const app = express();
-const port = process.env.PORT || 3010;
+const port = process.env.PORT || 3001;
 
 const categoryRoutes = require('./routes/CategoryRoutes');
 
