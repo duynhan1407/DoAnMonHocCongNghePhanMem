@@ -15,7 +15,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGO_URL=mongodb://mongo:27017/hotel
+      - MONGO_URL=mongodb://mongo:27017/datphongkhachsan
     volumes:
       - ./server/uploads:/app/uploads
     depends_on:

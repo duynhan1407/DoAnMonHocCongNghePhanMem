@@ -1,7 +1,7 @@
 {
-  "name": "doanchuyennganh",
+  "name": "myproject",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server/index.js",
   "scripts": {
     "server": "nodemon server/index.js",
     "start": "node server/index.js",

@@ -8,6 +8,6 @@ RUN npm install && npm rebuild bcrypt --build-from-source
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 5000
 
 CMD ["npm", "start"]
