@@ -3,6 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const dotenv = require('dotenv').config();
 const passport = require('./auth/passport');
 const DbConnect = require('./config/dataconn');
@@ -37,6 +38,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL || 'mongodb://mongo:27017/datphongkhachsan' }),
   cookie: { secure: false },
 }));
 
