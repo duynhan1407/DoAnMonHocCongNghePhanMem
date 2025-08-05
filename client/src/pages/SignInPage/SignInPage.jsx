@@ -210,7 +210,7 @@ const SignInPage = () => {
         </Button>
         <div style={{ textAlign: 'center', margin: '16px 0' }}>
           <GoogleButtonWrapper>
-            <a href={process.env.REACT_APP_API_URL.replace('/api','') + '/auth/google-signin'} style={{ width: '100%' }}>
+            <a href={process.env.REACT_APP_API_URL + '/auth/google-signin'} style={{ width: '100%' }}>
               <GoogleButton type="button">
                 <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style={{ width: 24, height: 24, marginRight: 8 }} />
                 Đăng nhập với Google
