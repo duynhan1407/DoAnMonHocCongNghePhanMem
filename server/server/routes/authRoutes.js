@@ -10,7 +10,7 @@ router.get('/google/callback', passport.authenticate('google', { failureRedirect
   const token = jwt.sign({ id: req.user._id, email: req.user.email, isAdmin: req.user.isAdmin }, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
   // Lấy biến isNewUser từ user object
   const isNewUser = req.user._isNewUser ? '1' : '0';
-  res.redirect(`http://localhost:3000/oauth-success?token=${token}&isNewUser=${isNewUser}`);
+    res.redirect(`${process.env.FRONTEND_URL}/oauth-success?token=${token}&isNewUser=${isNewUser}`);
 });
 
 // Đã xóa Facebook OAuth routes
@@ -21,11 +21,11 @@ router.get('/google-signin/callback', (req, res, next) => {
   passport.authenticate('google-signin', { failureRedirect: '/login', session: false }, (err, user, info) => {
     if (!user) {
       // Nếu chưa đăng ký, chuyển về frontend với thông báo lỗi
-      return res.redirect('http://localhost:3000/oauth-success?error=signin_not_registered');
+            return res.redirect(`${process.env.FRONTEND_URL}/oauth-success?error=signin_not_registered`);
     }
     const jwt = require('jsonwebtoken');
     const token = jwt.sign({ id: user._id, email: user.email, isAdmin: user.isAdmin }, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
-    res.redirect(`http://localhost:3000/oauth-success?token=${token}&isNewUser=0`);
+        res.redirect(`${process.env.FRONTEND_URL}/oauth-success?token=${token}&isNewUser=0`);
   })(req, res, next);
 });
 
@@ -35,11 +35,11 @@ router.get('/google-signup/callback', (req, res, next) => {
   passport.authenticate('google-signup', { failureRedirect: '/login', session: false }, (err, user, info) => {
     if (!user) {
       // Nếu email đã tồn tại, chuyển về frontend với thông báo lỗi
-      return res.redirect('http://localhost:3000/oauth-success?error=signup_email_exists');
+            return res.redirect(`${process.env.FRONTEND_URL}/oauth-success?error=signup_email_exists`);
     }
     const jwt = require('jsonwebtoken');
     const token = jwt.sign({ id: user._id, email: user.email, isAdmin: user.isAdmin }, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
-    res.redirect(`http://localhost:3000/oauth-success?token=${token}&isNewUser=1`);
+        res.redirect(`${process.env.FRONTEND_URL}/oauth-success?token=${token}&isNewUser=1`);
   })(req, res, next);
 });
 
