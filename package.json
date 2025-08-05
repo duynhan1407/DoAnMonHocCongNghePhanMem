@@ -1,7 +1,7 @@
 {
-  "name": "server",
+  "name": "myproject",
   "version": "1.0.0",
-  "main": "server/index.js",
+  "main": "index.js",
   "dependencies": {
     "accepts": "^1.3.8",
     "ansi-regex": "^5.0.1",
@@ -187,12 +187,11 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "serve": "node server/index.js",
-    "server": "nodemon server/index.js"
+    "start": "node index.js",
+    "dev": "nodemon server/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "My Node.js + MongoDB backend project"
 }
