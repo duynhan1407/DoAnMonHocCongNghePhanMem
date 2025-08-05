@@ -1,6 +1,5 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/User');
 
 passport.serializeUser((user, done) => {
@@ -71,26 +70,6 @@ passport.use('google-signup', new GoogleStrategy({
   }
 }));
 
-// Facebook OAuth
-passport.use(new FacebookStrategy({
-  clientID: process.env.FB_CLIENT_ID,
-  clientSecret: process.env.FB_CLIENT_SECRET,
-  callbackURL: process.env.FB_CALLBACK_URL,
-  profileFields: ['id', 'displayName', 'emails']
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let user = await User.findOne({ facebookId: profile.id });
-    if (!user) {
-      user = await User.create({
-        facebookId: profile.id,
-        name: profile.displayName,
-        email: profile.emails && profile.emails[0] ? profile.emails[0].value : '',
-      });
-    }
-    return done(null, user);
-  } catch (err) {
-    return done(err, null);
-  }
-}));
+// Đã xóa Facebook OAuth
 
 module.exports = passport;

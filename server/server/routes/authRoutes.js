@@ -13,11 +13,7 @@ router.get('/google/callback', passport.authenticate('google', { failureRedirect
   res.redirect(`http://localhost:3000/oauth-success?token=${token}&isNewUser=${isNewUser}`);
 });
 
-// Facebook OAuth
-router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
-router.get('/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login', session: false }), (req, res) => {
-  res.redirect('/oauth-success?provider=facebook');
-});
+// Đã xóa Facebook OAuth routes
 
 // Google OAuth - Đăng nhập (chỉ cho phép user đã tồn tại)
 router.get('/google-signin', passport.authenticate('google-signin', { scope: ['profile', 'email'] }));
