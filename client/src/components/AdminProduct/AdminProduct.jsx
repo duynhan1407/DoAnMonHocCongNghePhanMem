@@ -371,14 +371,14 @@ function QuanLySanPham() {
         uid: String(-idx - 1),
         name: `Uploaded Image ${idx + 1}`,
         status: "done",
-        url: img.startsWith('http://') || img.startsWith('https://') ? img : `${process.env.REACT_APP_API_URL.replace('/api','')}${img}`,
+        url: img.startsWith('http://') || img.startsWith('https://') ? img : `${process.env.REACT_APP_API_URL}${img}`,
       }));
     } else if (record.image) {
       imagesArr = [{
         uid: "-1",
         name: "Uploaded Image",
         status: "done",
-        url: record.image.startsWith('http://') || record.image.startsWith('https://') ? record.image : `${process.env.REACT_APP_API_URL.replace('/api','')}${record.image}`,
+        url: record.image.startsWith('http://') || record.image.startsWith('https://') ? record.image : `${process.env.REACT_APP_API_URL}${record.image}`,
       }];
     }
     setFileList(imagesArr);
@@ -521,7 +521,7 @@ function QuanLySanPham() {
         const isFullUrl = imgUrl.startsWith('http://') || imgUrl.startsWith('https://');
         return (
           <img
-            src={isFullUrl ? imgUrl : `${process.env.REACT_APP_API_URL.replace('/api','')}${imgUrl}`}
+            src={isFullUrl ? imgUrl : `${process.env.REACT_APP_API_URL}${imgUrl}`}
             alt="Sản phẩm"
             style={{ width: 100, height: 100, objectFit: "cover", cursor: "pointer" }}
             onClick={() => handleShowDetail(record)}
