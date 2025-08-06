@@ -9,24 +9,34 @@ const validateEmail = (email) => {
 };
 
 const createUser = async (newUser) => {
-    const { name, email, password, confirmPassword, phone } = newUser;
+    const { name, email, username, password, confirmPassword, phone } = newUser;
 
     try {
-        // Check if email is valid
-        if (!validateEmail(email)) {
-            return {
-                status: 'ERR',
-                message: 'Invalid email format'
-            };
+        // Nếu có email thì kiểm tra email hợp lệ và trùng lặp
+        if (email) {
+            if (!validateEmail(email)) {
+                return {
+                    status: 'ERR',
+                    message: 'Invalid email format'
+                };
+            }
+            const checkEmail = await User.findOne({ email });
+            if (checkEmail) {
+                return {
+                    status: 'ERR',
+                    message: 'The email is already in use'
+                };
+            }
         }
-
-        // Check if user already exists
-        const checkUser = await User.findOne({ email });
-        if (checkUser) {
-            return {
-                status: 'ERR',
-                message: 'The email is already in use'
-            };
+        // Nếu có username thì kiểm tra trùng lặp username
+        if (username) {
+            const checkUsername = await User.findOne({ username });
+            if (checkUsername) {
+                return {
+                    status: 'ERR',
+                    message: 'The username is already in use'
+                };
+            }
         }
 
         // Validate password confirmation
@@ -59,10 +69,15 @@ const createUser = async (newUser) => {
 };
 
 const loginUser = async (userLogin) => {
-    const { email, password } = userLogin;
+    const { email, username, password } = userLogin;
 
     try {
-        const checkUser = await User.findOne({ email });
+        let checkUser = null;
+        if (email) {
+            checkUser = await User.findOne({ email });
+        } else if (username) {
+            checkUser = await User.findOne({ username });
+        }
         if (!checkUser) {
             return {
                 status: 'ERR',

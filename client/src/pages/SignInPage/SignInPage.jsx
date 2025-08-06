@@ -9,10 +9,10 @@ import { SignInWrapper, SignInContainer, Title, InputWrapper, GoogleButtonWrappe
 import axios from 'axios';
 
 const SignInPage = () => {
-  const [email, setEmail] = useState('');
+  const [loginValue, setLoginValue] = useState(''); // username hoặc email
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailError, setEmailError] = useState('');
+  const [loginError, setLoginError] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -62,26 +62,22 @@ const SignInPage = () => {
 
   // Hàm đăng nhập người dùng
   const handleSignIn = async () => {
-    if (!email || !password) {
-      message.error('Email và mật khẩu là bắt buộc!');
+    if (!loginValue || !password) {
+      message.error('Tên đăng nhập/email và mật khẩu là bắt buộc!');
       return;
     }
-
+    // Kiểm tra loginValue là email hay username
+    const isEmail = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(loginValue);
+    const payload = isEmail ? { email: loginValue, password } : { username: loginValue, password };
     setLoading(true);
     try {
-      const response = await UserServices.loginUser({ email, password });
-
+      const response = await UserServices.loginUser(payload);
       if (response?.access_token) {
         const { access_token } = response;
-
-        // Lưu access_token vào localStorage
         localStorage.setItem('access_token', access_token);
-
         const decoded = jwtDecode(access_token);
         if (decoded?.id) {
-          // Lấy thông tin người dùng sau khi đăng nhập
           const user = await handleGetDetailUser(decoded.id, access_token);
-          // Lưu tên user vào localStorage để dùng cho review (luôn lưu trước khi chuyển trang)
           let userName = 'Không xác định';
           if (user) {
             if (user.name && typeof user.name === 'string') userName = user.name;
@@ -90,9 +86,6 @@ const SignInPage = () => {
             else if (user.email && typeof user.email === 'string') userName = user.email;
           }
           localStorage.setItem('userName', userName);
-          console.log('Đã lưu userName vào localStorage:', localStorage.getItem('userName'));
-
-          // Chuyển hướng sau khi đã lưu userName
           if (user?.isProfileUpdated) {
             message.success('Đăng nhập thành công!');
             navigate('/');
@@ -101,12 +94,10 @@ const SignInPage = () => {
           }
         }
       } else {
-        console.error('Token không tìm thấy trong phản hồi từ API.');
         message.error('Đăng nhập thất bại.');
       }
     } catch (error) {
-      console.error('Lỗi khi đăng nhập:', error.message);
-      message.error('Đăng nhập thất bại.');
+      message.error(error?.response?.data?.message || 'Đăng nhập thất bại.');
     } finally {
       setLoading(false);
     }
@@ -126,18 +117,15 @@ const SignInPage = () => {
   };
 
   // Kiểm tra email hợp lệ và cập nhật trạng thái lỗi
-  const validateEmail = (email) => {
-    const regex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
-    return regex.test(email);
-  };
-
-  const handleEmailChange = (e) => {
-    const emailValue = e.target.value;
-    setEmail(emailValue);
-    if (emailValue && !validateEmail(emailValue)) {
-      setEmailError('Vui lòng nhập email hợp lệ!');
+  const handleLoginValueChange = (e) => {
+    const value = e.target.value;
+    setLoginValue(value);
+    // Nếu là email thì kiểm tra hợp lệ, nếu không thì không báo lỗi
+    const isEmail = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(value);
+    if (value && isEmail === true && !value.match(/^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/)) {
+      setLoginError('Vui lòng nhập email hợp lệ!');
     } else {
-      setEmailError('');
+      setLoginError('');
     }
   };
 
@@ -181,16 +169,11 @@ const SignInPage = () => {
         <Title>Đăng nhập</Title>
         <InputWrapper>
           <Input
-            placeholder="Email"
-            value={email}
-            onChange={handleEmailChange}
-            onBlur={() => {
-              if (email && !validateEmail(email)) {
-                message.error(emailError);
-              }
-            }}
+            placeholder="Tên đăng nhập hoặc Email"
+            value={loginValue}
+            onChange={handleLoginValueChange}
           />
-          {emailError && <span style={{ color: 'red' }}>{emailError}</span>}
+          {loginError && <span style={{ color: 'red' }}>{loginError}</span>}
         </InputWrapper>
         <InputWrapper>
           <Input.Password
@@ -204,7 +187,7 @@ const SignInPage = () => {
           block
           loading={loading}
           onClick={handleSignIn}
-          disabled={!email || !password || loading || !!emailError}
+          disabled={!loginValue || !password || loading || !!loginError}
         >
           Đăng nhập
         </Button>

@@ -14,15 +14,14 @@ const validatePassword = (password) => {
 
 const createUser = async (req, res) => {
     try {
-        const { email, password, confirmPassword } = req.body;
-        
+        const { email, username, password, confirmPassword } = req.body;
         // Input validation
-        if (!email || !password || !confirmPassword) {
+        if ((!email && !username) || !password || !confirmPassword) {
             return res.status(400).json({
                 status: 'ERR',
-                message: 'All fields are required.'
+                message: 'Email hoặc username, password và confirmPassword là bắt buộc.'
             });
-        } else if (!validateEmail(email)) {
+        } else if (email && !validateEmail(email)) {
             return res.status(400).json({
                 status: 'ERR',
                 message: 'Invalid email format.'
@@ -38,7 +37,6 @@ const createUser = async (req, res) => {
                 message: 'Password must be at least 6 characters.'
             });
         }
-        
         // Create user
         const response = await UserService.createUser(req.body);
         return res.status(201).json(response);
@@ -52,33 +50,34 @@ const createUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
-        
+        const { email, username, password } = req.body;
         // Input validation
-        if (!email || !password) {
+        if ((!email && !username) || !password) {
             return res.status(400).json({
                 status: 'ERR',
-                message: 'Email and password are required.'
-            });
-        } else if (!validateEmail(email)) {
-            return res.status(400).json({
-                status: 'ERR',
-                message: 'Invalid email format.'
+                message: 'Email hoặc username và password là bắt buộc.'
             });
         }
-
         // Login user
         const response = await UserService.loginUser(req.body);
+        if (response.status !== 'OK') {
+            // Log lỗi chi tiết phía server
+            console.error('Login failed:', response.message);
+            return res.status(401).json({
+                status: response.status,
+                message: response.message
+            });
+        }
         const { refresh_token, ...newResponse } = response;
-        
         res.cookie('refresh_token', refresh_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production', // Only secure in production
             sameSite: 'strict',
         });
-
         return res.status(200).json(newResponse);
     } catch (e) {
+        // Log lỗi chi tiết phía server
+        console.error('Error in loginUser controller:', e);
         return res.status(500).json({
             status: 'ERR',
             message: e.message || 'An error occurred.'

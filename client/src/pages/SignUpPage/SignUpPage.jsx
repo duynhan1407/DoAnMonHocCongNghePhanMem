@@ -14,6 +14,7 @@ const handleNavigateSignIn = (navigate) => () => navigate('/sign-in');
 const SignUpPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -33,12 +34,19 @@ const SignUpPage = () => {
   }, [isSuccess, isError, navigate]);
 
   const handleOnchangeEmail = (value) => setEmail(value);
+  const handleOnchangeUsername = (value) => setUsername(value);
   const handleOnchangePassword = (value) => setPassword(value);
   const handleOnchangeConfirmPassword = (value) => setConfirmPassword(value);
 
   const handleSignUp = () => {
-    mutation.mutate({ email, password, confirmPassword });
-    console.log('sign-up', email, password, confirmPassword);
+    // Gửi cả username và email nếu có, hoặc chỉ 1 trong 2
+    const payload = {};
+    if (email) payload.email = email;
+    if (username) payload.username = username;
+    payload.password = password;
+    payload.confirmPassword = confirmPassword;
+    mutation.mutate(payload);
+    console.log('sign-up', payload);
   };
 
   return (
@@ -49,12 +57,13 @@ const SignUpPage = () => {
           <p style={{ fontSize: '16px', padding: '0 6px', color: 'rgb(16, 28, 255)' }}>
             Đăng nhập và tạo tài khoản
           </p>
-          <InputForm style={{ marginBottom: '6px' }} placeholder="email" value={email} onChange={handleOnchangeEmail} />
+          <InputForm style={{ marginBottom: '6px' }} placeholder="Tên đăng nhập" value={username} onChange={handleOnchangeUsername} />
+          <InputForm style={{ marginBottom: '6px' }} placeholder="Email" value={email} onChange={handleOnchangeEmail} />
           <InputForm style={{ marginBottom: '6px' }} placeholder="Mật khẩu" value={password} onChange={handleOnchangePassword} />
           <InputForm placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={handleOnchangeConfirmPassword} />
           {data?.status === 'ERR' && <span>{data?.message}</span>}
           <ButtonComponent
-            disabled={!email.length || !password.length || !confirmPassword.length}
+            disabled={(!email.length && !username.length) || !password.length || !confirmPassword.length}
             onClick={handleSignUp}
             bodered={false}
             size={100}
