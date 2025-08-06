@@ -44,7 +44,7 @@ export const loginUser = async (data) => {
 };
 
 // API đăng ký người dùng mới
-export const signupUser = async (data) => basePost(`/user/sign-up`, data);
+export const signupUser = async (data) => basePost(`/api/user/sign-up`, data);
 
 
 export const getDetailUser = async (id) => {
