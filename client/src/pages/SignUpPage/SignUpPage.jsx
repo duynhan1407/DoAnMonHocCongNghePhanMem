@@ -79,7 +79,7 @@ const SignUpPage = () => {
             styleButton={{ color: '#efefef' }}
           />
           <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
-            <a href={`${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/auth/google-signup`}>
+            <a href={process.env.REACT_APP_API_URL.replace(/\/$/, '') + '/auth/google-signup'}>
               <img
                 src="https://developers.google.com/identity/images/g-logo.png"
                 alt="Google"
