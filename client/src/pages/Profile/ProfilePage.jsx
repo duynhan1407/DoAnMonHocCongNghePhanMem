@@ -94,7 +94,7 @@ const ProfilePage = () => {
             <div style={{ marginBottom: '10px' }}>
                 <label>Avatar</label>
                 <Upload
-                    action={process.env.REACT_APP_API_URL + "/upload"}  // Adjust the backend URL as necessary
+                    action={process.env.REACT_APP_API_URL.replace(/\/$/, '') + "/upload"}  // Adjust the backend URL as necessary
                     listType="picture-card"
                     onChange={handleAvatarChange}
                     showUploadList={false}  // Hide default upload list

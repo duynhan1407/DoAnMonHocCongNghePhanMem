@@ -14,7 +14,7 @@ const CardComponent = ({
 }) => {
   const fullImageUrl = image && (image.startsWith('http://') || image.startsWith('https://'))
     ? image
-    : image ? `${process.env.REACT_APP_API_URL}${image}` : '/default-product.jpg';
+    : image ? `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}${image}` : '/default-product.jpg';
 
   return (
     <Card

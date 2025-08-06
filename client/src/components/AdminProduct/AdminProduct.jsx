@@ -371,14 +371,14 @@ function QuanLySanPham() {
         uid: String(-idx - 1),
         name: `Uploaded Image ${idx + 1}`,
         status: "done",
-        url: img.startsWith('http://') || img.startsWith('https://') ? img : `${process.env.REACT_APP_API_URL}${img}`,
+        url: img.startsWith('http://') || img.startsWith('https://') ? img : `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}${img}`,
       }));
     } else if (record.image) {
       imagesArr = [{
         uid: "-1",
         name: "Uploaded Image",
         status: "done",
-        url: record.image.startsWith('http://') || record.image.startsWith('https://') ? record.image : `${process.env.REACT_APP_API_URL}${record.image}`,
+        url: record.image.startsWith('http://') || record.image.startsWith('https://') ? record.image : `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}${record.image}`,
       }];
     }
     setFileList(imagesArr);
@@ -521,7 +521,7 @@ function QuanLySanPham() {
         const isFullUrl = imgUrl.startsWith('http://') || imgUrl.startsWith('https://');
         return (
           <img
-            src={isFullUrl ? imgUrl : `${process.env.REACT_APP_API_URL}${imgUrl}`}
+            src={isFullUrl ? imgUrl : `${process.env.REACT_APP_API_URL.replace(/\/$/, '')}${imgUrl}`}
             alt="Sản phẩm"
             style={{ width: 100, height: 100, objectFit: "cover", cursor: "pointer" }}
             onClick={() => handleShowDetail(record)}
@@ -706,7 +706,7 @@ function QuanLySanPham() {
           {/* Trạng thái sản phẩm sẽ tự động cập nhật theo số lượng, không cho phép chỉnh sửa ở đây */}
           <Form.Item name="images" label="Hình ảnh sản phẩm">
             <Upload
-              action={process.env.REACT_APP_API_URL + "/upload"}
+              action={process.env.REACT_APP_API_URL.replace(/\/$/, '') + "/upload"}
               listType="picture-card"
               fileList={fileList}
               onChange={handleUploadChange}
