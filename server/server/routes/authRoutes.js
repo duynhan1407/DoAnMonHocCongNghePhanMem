@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/login', session: false }), (req, res) => {
   const jwt = require('jsonwebtoken');
-  const token = jwt.sign({ id: req.user._id, email: req.user.email, isAdmin: req.user.isAdmin }, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
+  const token = jwt.sign({ id: req.user._id, email: req.user.email, isAdmin: req.user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1d' });
   res.redirect(`${process.env.FRONTEND_URL}/oauth-success?token=${token}`);
 });
 
