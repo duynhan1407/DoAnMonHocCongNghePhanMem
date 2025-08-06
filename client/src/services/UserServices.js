@@ -55,7 +55,7 @@ export const getDetailUser = async (id) => {
             const user = JSON.parse(localStorage.getItem('user'));
             userId = user?.id;
         }
-        return await baseGet(`/user/get-detail/${userId}`, {
+        return await baseGet(`/api/user/get-detail/${userId}`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
