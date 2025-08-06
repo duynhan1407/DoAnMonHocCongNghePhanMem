@@ -45,31 +45,29 @@ passport.use('google-signin', new GoogleStrategy({
   }
 }));
 
-// Google OAuth - Đăng ký (chỉ cho phép user mới)
-passport.use('google-signup', new GoogleStrategy({
+
+// Google OAuth: tự động tạo tài khoản nếu chưa có
+passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL.replace('/auth/google/callback', '/auth/google-signup/callback'),
+  callbackURL: process.env.GOOGLE_CALLBACK_URL,
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     let user = await User.findOne({ email: profile.emails[0].value });
-    if (user) {
-      // Không cho phép đăng ký nếu đã có tài khoản
-      return done(null, false, { message: 'Email đã tồn tại, vui lòng đăng nhập.' });
+    if (!user) {
+      user = await User.create({
+        email: profile.emails[0].value,
+        googleId: profile.id,
+        name: profile.displayName,
+        isAdmin: profile.emails[0].value === 'nhancao1103@gmail.com',
+      });
+    } else if (!user.googleId) {
+      user.googleId = profile.id;
+      await user.save();
     }
-    user = await User.create({
-      googleId: profile.id,
-      name: profile.displayName,
-      email: profile.emails[0].value,
-      isAdmin: (profile.emails[0].value === 'nhancao1103@gmail.com') // true nếu là email admin
-    });
-    user._isNewUser = true;
     return done(null, user);
   } catch (err) {
     return done(err, null);
   }
 }));
-
 // Đã xóa Facebook OAuth
-
-module.exports = passport;
