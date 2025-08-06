@@ -62,14 +62,24 @@ passport.use(new GoogleStrategy({
         name: profile.displayName,
         isAdmin: profile.emails[0].value === 'nhancao1103@gmail.com',
       });
-    } else if (!user.googleId) {
-      user.googleId = profile.id;
-      await user.save();
+    } else {
+      // Nếu user đã tồn tại nhưng chưa có googleId hoặc chưa có name thì cập nhật
+      let updated = false;
+      if (!user.googleId) {
+        user.googleId = profile.id;
+        updated = true;
+      }
+      if (!user.name && profile.displayName) {
+        user.name = profile.displayName;
+        updated = true;
+      }
+      if (updated) {
+        await user.save();
+      }
     }
     return done(null, user);
   } catch (err) {
     return done(err, null);
   }
 }));
-// Đã xóa Facebook OAuth
 module.exports = passport;

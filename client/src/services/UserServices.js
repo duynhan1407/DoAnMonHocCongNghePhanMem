@@ -50,7 +50,12 @@ export const signupUser = async (data) => basePost(`/api/user/sign-up`, data);
 export const getDetailUser = async (id) => {
     try {
         const token = localStorage.getItem('access_token');
-        return await baseGet(`/user/get-detail/${id}`, {
+        let userId = id;
+        if (!userId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            userId = user?.id;
+        }
+        return await baseGet(`/user/get-detail/${userId}`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }

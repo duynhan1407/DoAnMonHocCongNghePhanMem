@@ -32,7 +32,7 @@
     "color-name": "^1.1.4",
     "concat-map": "^0.0.1",
     "concat-stream": "^1.6.2",
-    "concurrently": "^9.1.0",
+    "concurrently": "^9.2.0",
     "connect-mongo": "^5.1.0",
     "content-disposition": "^0.5.4",
     "content-type": "^1.0.5",
@@ -185,7 +185,6 @@
     "yargs": "^17.7.2",
     "yargs-parser": "^21.1.1"
   },
-  "devDependencies": {},
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon server/index.js"
