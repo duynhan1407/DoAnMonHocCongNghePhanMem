@@ -23,7 +23,7 @@ export const decodeJwtPayload = (token) => {
 
 // API đăng nhập người dùng
 export const loginUser = async (data) => {
-    const res = await basePost(`/user/sign-in`, data);
+    const res = await basePost(`/api/user/sign-in`, data);
     // Lưu access_token và thông tin user vào localStorage
     if (res?.access_token) {
         localStorage.setItem('access_token', res.access_token);
