@@ -1,5 +1,4 @@
 // ...existing code...
-module.exports = passport;
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
@@ -73,3 +72,4 @@ passport.use(new GoogleStrategy({
   }
 }));
 // Đã xóa Facebook OAuth
+module.exports = passport;
