@@ -49,7 +49,12 @@ export const signupUser = async (data) => basePost(`/api/user/sign-up`, data);
 
 export const getDetailUser = async (id) => {
     try {
-        return await baseGet(`/user/get-detail/${id}`);
+        const token = localStorage.getItem('access_token');
+        return await baseGet(`/user/get-detail/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
     } catch (error) {
         message.error(error?.response?.data?.message || 'An error occurred while fetching user details.');
         throw error;
@@ -59,7 +64,12 @@ export const getDetailUser = async (id) => {
 // API lấy danh sách tất cả người dùng
 export const getAllUser = async () => {
     try {
-        return await baseGet(`/user/getAll`);
+        const token = localStorage.getItem('access_token');
+        return await baseGet(`/user/getAll`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
     } catch (error) {
         message.error(error?.response?.data?.message || 'An error occurred while fetching users.');
         throw error;
