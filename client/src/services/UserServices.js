@@ -70,7 +70,7 @@ export const getDetailUser = async (id) => {
 export const getAllUser = async () => {
     try {
         const token = localStorage.getItem('access_token');
-        return await baseGet(`/user/getAll`, {
+        return await baseGet(`/api/user/getAll`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -82,11 +82,11 @@ export const getAllUser = async () => {
 };
 
 // API đăng xuất người dùng
-export const logoutUser = async () => basePost(`/user/log-out`);
+export const logoutUser = async () => basePost(`/api/user/log-out`);
 
 export const updateUser = async (id, data) => {
   try {
-    return await basePut(`/user/update-user/${id}`, data);
+    return await basePut(`/api/user/update-user/${id}`, data);
   } catch (error) {
     message.error(error?.response?.data?.message || 'Failed to update user.');
     throw error;
@@ -95,7 +95,7 @@ export const updateUser = async (id, data) => {
 
 export const deleteUser = async (id) => {
   try {
-    return await baseDelete(`/user/delete/${id}`);
+    return await baseDelete(`/api/user/delete/${id}`);
   } catch (error) {
     message.error(error?.response?.data?.message || 'Failed to delete user.');
     throw error;
