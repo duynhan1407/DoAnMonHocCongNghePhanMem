@@ -145,9 +145,15 @@ function QuanLySanPham() {
       }
     };
     window.addEventListener('storage', storageHandler);
+    // Lắng nghe khi thêm sản phẩm ở kho
+    const reloadFromStock = () => {
+      fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
+    };
+    eventBus.on('reloadProductsFromStock', reloadFromStock);
     // Cleanup khi unmount
     return () => {
       eventBus.off('reloadProducts', reloadHandler);
+      eventBus.off('reloadProductsFromStock', reloadFromStock);
       window.removeEventListener('storage', storageHandler);
     };
     // eslint-disable-next-line

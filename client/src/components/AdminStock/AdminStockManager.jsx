@@ -96,11 +96,11 @@ const AdminStockManager = () => {
         payload.quantity = values.quantity;
       }
       await ProductService.createProduct(payload);
-      // Removed brands logic
       message.success("Đã thêm sản phẩm mới!");
       setAddModal(false);
       addForm.resetFields();
       fetchProducts();
+      eventBus.emit('reloadProductsFromStock');
     } catch (err) {
       if (err?.errorFields) return;
       message.error("Lỗi thêm sản phẩm!");
