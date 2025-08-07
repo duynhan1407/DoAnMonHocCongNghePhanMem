@@ -1,8 +1,6 @@
 import { baseGet, basePost, basePut, baseDelete } from './baseService';
 import axios from 'axios';
 
-const API_URL = '/api/orders';
-
 // Lấy tất cả đơn hàng (admin hoặc user)
 export const getAllOrders = (token, status) => baseGet('/api/order/getAll', { token, status });
 

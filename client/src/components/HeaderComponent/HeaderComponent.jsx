@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Col, message, Popover } from 'antd';
 import { Wrappercontent, WrapperHeader, WrapperHeaderAccount, WrapperTextHeader, WrapperTextHeaderSmall, SearchInput } from './Style';
-import { UserOutlined, CaretDownOutlined, InboxOutlined } from '@ant-design/icons';
-import ShoppingCartIcon from './ShoppingCartIcon';
+import { UserOutlined, CaretDownOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+// Đã import ShoppingCartOutlined ở trên
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import * as UserServices from '../../services/UserServices';
@@ -123,7 +123,7 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenInbox = false }) => {
             )}
           </WrapperHeaderAccount>
           <Badge count={cartCount} size="small" offset={[0, 6]}>
-            <ShoppingCartIcon style={{ fontSize: '30px', color: '#fff', cursor: 'pointer' }} onClick={() => navigate('/cart')} />
+            <ShoppingCartOutlined style={{ fontSize: '30px', color: '#fff', cursor: 'pointer' }} onClick={() => navigate('/cart')} />
           </Badge>
         </Col>
       </WrapperHeader>

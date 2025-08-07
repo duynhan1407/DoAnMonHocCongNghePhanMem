@@ -20,7 +20,6 @@ import {
   Tag,
 } from "antd";
 import { SearchOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons';
-import UploadComponent from '../UploadComponent/UploadComponent';
 import Highlighter from 'react-highlight-words';
 import { getAllProducts, updateProduct, deleteProduct } from '../../services/ProductService';
 import { getAllBrands, createBrand } from '../../services/BrandService';
@@ -28,12 +27,7 @@ import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 
 function QuanLySanPham() {
   // Hàm chuẩn hóa mô tả sản phẩm phía frontend
-  function normalizeDescription(desc) {
-    if (typeof desc !== 'string') return '';
-    if (desc.includes(':')) return desc;
-    let lines = desc.split(/\n|\r|<br\s*\/?/).map(line => line.trim()).filter(line => line);
-    return lines.join('\n');
-  }
+  // ...existing code...
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
@@ -322,7 +316,7 @@ function QuanLySanPham() {
     form.resetFields();
   };
 
-  const { uploadToCloudinary, uploadMultipleImages } = useCloudinaryUpload();
+  const { uploadMultipleImages } = useCloudinaryUpload();
   
   const handleBeforeUpload = (file) => {
     // Chỉ kiểm tra dung lượng, không kiểm tra định dạng file
