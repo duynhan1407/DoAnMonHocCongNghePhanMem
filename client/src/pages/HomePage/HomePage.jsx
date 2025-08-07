@@ -1,5 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToFavorite, removeFromFavorite } from '../../redux/favoriteSlice';
 import { useQuery } from '@tanstack/react-query';
 import { WrapperProducts, HomeResponsiveCard } from './style';
 
@@ -7,7 +10,8 @@ import * as ProductService from '../../services/ProductService';
 import { getAllCategories } from '../../services/CategoryService';
 
 const HomePage = () => {
-  // Dropdown state
+  const dispatch = useDispatch();
+  const favoriteItems = useSelector(state => state.favorite.items || []);
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
@@ -101,23 +105,23 @@ const HomePage = () => {
     });
   }
 
-  // Placeholder: handle favorite toggle
+  // Lưu sản phẩm yêu thích vào redux (và localStorage qua favoriteSlice)
   const handleToggleFavorite = (product) => {
-    // Implement your favorite logic here
-    // e.g., update state or call API
-    alert('Toggled favorite for ' + product.name);
+    const exists = favoriteItems.some(item => item._id === product._id);
+    if (exists) {
+      dispatch(removeFromFavorite(product._id));
+      message.info('Đã bỏ khỏi mục yêu thích!');
+    } else {
+      dispatch(addToFavorite(product));
+      message.success('Đã thêm vào mục yêu thích!');
+    }
   };
+  // Kiểm tra sản phẩm có trong mục yêu thích không
+  const isFavorite = (productId) => favoriteItems.some(item => item._id === productId);
 
-  // Placeholder: check if product is favorite
-  const isFavorite = (productId) => {
-    // Implement your favorite check logic here
-    return false;
-  };
-
-  // Placeholder: handle product click
+  // Điều hướng sang trang chi tiết sản phẩm khi click
   const handleProductClick = (productId) => {
-    // Implement your navigation logic here
-    alert('Clicked product ' + productId);
+    navigate(`/product-detail/${productId}`);
   };
 
   // Placeholder: get sale percent

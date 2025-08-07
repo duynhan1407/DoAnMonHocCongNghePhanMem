@@ -1,57 +1,62 @@
 import React, { useState } from 'react';
-import { uploadImageToCloudinary } from '../../services/cloudinaryService';
+import { Upload, message } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
-const UploadComponent = () => {
-  const [file, setFile] = useState(null);
-  const [message, setMessage] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [loading, setLoading] = useState(false);
+const UploadComponent = ({ onChange, maxCount = 8, fileList = [], ...props }) => {
+  const [uploading, setUploading] = useState(false);
 
-  // Xử lý khi chọn tệp
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  // Xử lý upload tệp lên Cloudinary
-  const handleFileUpload = async () => {
-    if (!file) {
-      setMessage('Please select a file.');
-      return;
-    }
-    setLoading(true);
-    setMessage('Uploading...');
+  const handleUpload = async ({ file, onSuccess, onError }) => {
     try {
-      const url = await uploadImageToCloudinary(file);
-      setImageUrl(url);
-      setMessage('File uploaded successfully!');
-    } catch (error) {
-      setMessage('Error uploading file.');
-      if (error.response) {
-        setMessage(`Error: ${error.response.data?.error?.message || error.response.data?.message || 'Unknown error'}`);
-        console.error('Cloudinary error:', error.response.data);
-      } else {
-        console.error('Upload error:', error);
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
+      
+      const response = await axios.post(
+        process.env.REACT_APP_CLOUDINARY_UPLOAD_URL,
+        formData
+      );
+
+      onSuccess(response.data.secure_url);
+      
+      if (onChange) {
+        onChange({
+          file: {
+            ...file,
+            status: 'done',
+            url: response.data.secure_url
+          },
+          fileList: [...fileList, {
+            uid: file.uid,
+            name: file.name,
+            status: 'done',
+            url: response.data.secure_url
+          }]
+        });
       }
+    } catch (error) {
+      console.error('Upload error:', error);
+      message.error('Lỗi khi tải ảnh lên: ' + error.message);
+      onError(error);
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
   return (
-    <div>
-      <h1>Upload a File</h1>
-      <input type="file" onChange={handleFileChange} />
-      <button onClick={handleFileUpload} disabled={loading}>{loading ? 'Uploading...' : 'Upload'}</button>
-      <p>{message}</p>
-      {imageUrl && (
-        <div>
-          <p>Image URL:</p>
-          <a href={imageUrl} target="_blank" rel="noopener noreferrer">{imageUrl}</a>
-          <br />
-          <img src={imageUrl} alt="Uploaded" style={{ maxWidth: 300, marginTop: 10 }} />
-        </div>
-      )}
-    </div>
+    <Upload
+      customRequest={handleUpload}
+      accept="image/*"
+      listType="picture"
+      maxCount={maxCount}
+      fileList={fileList}
+      {...props}
+    >
+      <button disabled={uploading || fileList.length >= maxCount}>
+        <UploadOutlined /> {uploading ? 'Đang tải lên...' : 'Tải ảnh lên'}
+      </button>
+    </Upload>
   );
 };
 

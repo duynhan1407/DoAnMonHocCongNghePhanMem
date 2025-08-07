@@ -30,6 +30,7 @@ const AdminCategory = () => {
         if (p.category) {
           let totalQty = 0;
           if (Array.isArray(p.colors) && p.colors.length > 0) {
+            // Cộng tổng số lượng thực tế của các màu còn hàng
             p.colors.forEach(colorObj => {
               if (typeof colorObj.quantity === 'number' && colorObj.quantity > 0) {
                 totalQty += colorObj.quantity;

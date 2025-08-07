@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Col, message, Popover } from 'antd';
 import { Wrappercontent, WrapperHeader, WrapperHeaderAccount, WrapperTextHeader, WrapperTextHeaderSmall, SearchInput } from './Style';
 import { UserOutlined, CaretDownOutlined, InboxOutlined } from '@ant-design/icons';
+import ShoppingCartIcon from './ShoppingCartIcon';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import * as UserServices from '../../services/UserServices';
@@ -11,6 +12,8 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenInbox = false }) => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
+  const cartItems = useSelector((state) => state.cart?.items || []);
+  const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const [userName, setUserName] = useState('');
   const [userAvatar, setUserAvatar] = useState('');
   const [searchTerm, setSearchTerm] = useState(''); // Thêm trạng thái cho giá trị tìm kiếm
@@ -88,8 +91,8 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenInbox = false }) => {
           )}
         </Col>
 
-        {/* User & Inbox Section */}
-        <Col span={6} style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        {/* User & Cart Section */}
+        <Col span={6} style={{ display: 'flex', gap: '20px', alignItems: 'center', justifyContent: 'flex-end' }}>
           <WrapperHeaderAccount>
             {userAvatar ? (
               <img
@@ -119,13 +122,9 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenInbox = false }) => {
               </div>
             )}
           </WrapperHeaderAccount>
-
-          {/* Inbox Icon */}
-          {!isHiddenInbox && (
-            <Badge count={4} size="small">
-              <InboxOutlined style={{ fontSize: '30px', color: '#fff' }} />
-            </Badge>
-          )}
+          <Badge count={cartCount} size="small" offset={[0, 6]}>
+            <ShoppingCartIcon style={{ fontSize: '30px', color: '#fff', cursor: 'pointer' }} onClick={() => navigate('/cart')} />
+          </Badge>
         </Col>
       </WrapperHeader>
     </div>

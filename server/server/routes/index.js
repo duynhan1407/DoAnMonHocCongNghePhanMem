@@ -9,7 +9,7 @@ const routes = (app) => {
     app.use('/api/user', UserRouter);
     app.use('/api/product', ProductRouter);
     app.use('/api/order', OrderRouter);
-    app.use('/api/upload', uploadRoutes);
+    // app.use('/api/upload', uploadRoutes); // Không còn dùng upload qua backend
     app.use('/api/payment', paymentRoutes);
     app.use('/api/brand', BrandRoutes);
 };

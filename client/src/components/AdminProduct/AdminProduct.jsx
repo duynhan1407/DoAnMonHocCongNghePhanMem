@@ -20,9 +20,11 @@ import {
   Tag,
 } from "antd";
 import { SearchOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons';
+import UploadComponent from '../UploadComponent/UploadComponent';
 import Highlighter from 'react-highlight-words';
 import { getAllProducts, updateProduct, deleteProduct } from '../../services/ProductService';
 import { getAllBrands, createBrand } from '../../services/BrandService';
+import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 
 function QuanLySanPham() {
   // Hàm chuẩn hóa mô tả sản phẩm phía frontend
@@ -240,93 +242,74 @@ function QuanLySanPham() {
   const handleFormSubmit = async (values) => {
     setActionLoading(true);
     try {
-      // Chỉ cho phép cập nhật, không cho phép tạo mới
+      // Handle image uploads
+      const fileListToUpload = fileList.filter(file => file.originFileObj);
+      if (fileListToUpload.length > 0) {
+        const uploadedUrls = await uploadMultipleImages(
+          fileListToUpload.map(file => file.originFileObj)
+        );
+        // Combine existing images with new uploaded ones
+        const existingImages = fileList
+          .filter(file => !file.originFileObj)
+          .map(file => file.url);
+        values.images = [...existingImages, ...uploadedUrls];
+      } else {
+        values.images = fileList.map(file => file.url);
+      }
+
       if (!currentProduct?._id) {
-        message.error("Chỉ được cập nhật sản phẩm, không được thêm mới ở đây!");
+        message.error('Không tìm thấy thông tin sản phẩm để cập nhật!');
         setActionLoading(false);
         return;
       }
-      // Đảm bảo chỉ truyền mảng url string cho images
-      let productData = { ...values };
-      if (Array.isArray(values.images)) {
-        productData.images = values.images.filter(img => typeof img === 'string');
-        if (!productData.image && productData.images.length > 0) {
-          productData.image = productData.images[0];
-        }
-      }
 
-      // Mô tả là chuỗi textarea, chuẩn hóa xuống backend
-      if (typeof values.description === 'string') {
-        productData.description = normalizeDescription(values.description);
+      // Nếu sản phẩm có nhiều màu, chỉ cập nhật đúng màu đang sửa, giữ nguyên các màu còn lại
+      let productData = { ...currentProduct };
+      // Luôn cập nhật category ở root object
+      if (values.category) {
+        productData.category = values.category;
       }
-
-      // Chỉ cập nhật đúng màu đang chọn, không ghi đè toàn bộ mảng colors
       if (Array.isArray(currentProduct.colors) && currentProduct.colors.length > 0 && currentProduct.color) {
-        // Tìm index màu đang chọn
-        const idx = currentProduct.colors.findIndex(c => c.color === currentProduct.color);
-        if (idx > -1) {
-          // Tạo bản sao mảng colors, chỉ cập nhật đúng màu đang chọn
-          const newColors = currentProduct.colors.map((c, i) => {
-            if (i === idx) {
-              // Discount không bắt buộc nhập, nếu không nhập thì giữ discount cũ
-              let discountValue = c.discount;
-              if (productData.discount !== undefined && productData.discount !== null && productData.discount !== '') {
-                discountValue = productData.discount;
-              }
-              // Serialize technical specs for color description
-              let colorDescription = productData.description;
+        // Lấy lại toàn bộ mảng colors từ backend
+        const res = await getAllProducts({ _id: currentProduct._id });
+        const fullProduct = res?.data?.[0];
+        if (fullProduct && Array.isArray(fullProduct.colors)) {
+          const newColors = fullProduct.colors.map(c => {
+            if (c.color === currentProduct.color) {
               return {
                 ...c,
-                images: productData.images,
-                price: productData.price,
-                description: colorDescription,
-                quantity: typeof productData.quantity === 'number' ? productData.quantity : c.quantity,
-                discount: discountValue
+                images: values.images,
+                price: values.price,
+                description: values.description,
+                quantity: typeof values.quantity === 'number' ? values.quantity : c.quantity,
+                discount: values.discount !== undefined ? values.discount : c.discount
               };
             }
             return c;
           });
           productData.colors = newColors;
         }
-      }
-      await updateProduct(currentProduct._id, productData);
-      // Luôn reload lại danh sách sản phẩm từ backend để đồng bộ dữ liệu
-      fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
-      message.success("Cập nhật sản phẩm thành công!");
-      // Cập nhật lại chỉ dòng sản phẩm vừa sửa, giữ lại các dòng khác màu
-      const updatedRes = await getAllProducts({ _id: currentProduct._id });
-      if (updatedRes?.data && Array.isArray(updatedRes.data)) {
-        const updatedProduct = updatedRes.data[0];
-        // Tách mỗi màu thành 1 dòng riêng biệt
-        let updatedRows = [];
-        if (Array.isArray(updatedProduct.colors) && updatedProduct.colors.length > 0) {
-          updatedRows = updatedProduct.colors.map((color) => ({
-            ...updatedProduct,
-            color: color.color,
-            images: color.images,
-            price: color.price,
-            description: color.description,
-            key: `${updatedProduct._id}-${color.color}`,
-          }));
-        } else {
-          updatedRows = [{
-            ...updatedProduct,
-            color: null,
-            key: `${updatedProduct._id}-no-color`,
-          }];
-        }
-        setProducts(prev => {
-          // Loại bỏ các dòng cùng _id
-          const filtered = prev.filter(p => p._id !== currentProduct._id);
-          // Thêm lại các dòng mới
-          return [...filtered, ...updatedRows].filter(p => (p.quantity || 0) > 0);
-        });
+        // Xóa các trường riêng lẻ để tránh ghi đè lên root
+        delete productData.color;
+        delete productData.images;
+        delete productData.price;
+        delete productData.description;
+        delete productData.quantity;
+        delete productData.discount;
       } else {
-        fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
+        // Sản phẩm không có màu, cập nhật trực tiếp
+        productData = { ...productData, ...values };
       }
-      closeModal();
+
+      await updateProduct(currentProduct._id, productData);
+      message.success('Cập nhật sản phẩm thành công!');
+      setIsModalOpen(false);
+      form.resetFields();
+      setFileList([]);
+      fetchProducts();
     } catch (error) {
-      message.error(error?.response?.data?.message || "Không thể lưu thông tin sản phẩm.");
+      console.error('Error in handleFormSubmit:', error);
+      message.error('Có lỗi xảy ra: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -339,6 +322,8 @@ function QuanLySanPham() {
     form.resetFields();
   };
 
+  const { uploadToCloudinary, uploadMultipleImages } = useCloudinaryUpload();
+  
   const handleBeforeUpload = (file) => {
     // Chỉ kiểm tra dung lượng, không kiểm tra định dạng file
     const isLt2M = file.size / 1024 / 1024 < 2;
@@ -707,7 +692,21 @@ function QuanLySanPham() {
           {/* Trạng thái sản phẩm sẽ tự động cập nhật theo số lượng, không cho phép chỉnh sửa ở đây */}
           <Form.Item name="images" label="Hình ảnh sản phẩm">
             <Upload
-              action={process.env.REACT_APP_API_URL.replace(/\/$/, '') + "/api/upload"}
+              customRequest={async ({ file, onSuccess, onError }) => {
+                try {
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  formData.append('upload_preset', process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
+                  const response = await fetch(process.env.REACT_APP_CLOUDINARY_UPLOAD_URL, {
+                    method: 'POST',
+                    body: formData
+                  });
+                  const data = await response.json();
+                  onSuccess(data);
+                } catch (err) {
+                  onError(err);
+                }
+              }}
               listType="picture-card"
               fileList={fileList}
               onChange={handleUploadChange}

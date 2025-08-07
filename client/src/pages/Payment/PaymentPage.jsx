@@ -1,12 +1,15 @@
 
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { Card, Radio, Button, Input, message } from 'antd';
-import { useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { clearCart } from '../../redux/cartSlice';
+import { Card, Radio, Button, Input, message, Modal } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
 import * as OrderService from '../../services/OrderService';
 
 const PaymentPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const cart = location.state?.cart || [];
   const userInfo = location.state?.userInfo || {};
   const user = useSelector((state) => state.user);
@@ -14,6 +17,7 @@ const PaymentPage = () => {
   const [discount, setDiscount] = useState('');
   // ...existing code...
   const [loading, setLoading] = useState(false);
+  const [orderSuccessModal, setOrderSuccessModal] = useState(false);
 
   const shippingFee = shipping === 'local' ? 40000 : 100000;
   // Tính giá sau giảm cho từng item
@@ -60,9 +64,11 @@ const PaymentPage = () => {
         shippingFee,
         totalPrice: total,
         status: 'pending',
-      });
+      }, user?.access_token);
       message.success('Đặt hàng thành công!');
+      setOrderSuccessModal(true);
       // Xóa toàn bộ giỏ hàng khi đặt hàng thành công
+      dispatch(clearCart());
       localStorage.removeItem('cart');
       window.dispatchEvent(new Event('storage'));
       // Phát sự kiện cập nhật sản phẩm cho HomePage
@@ -86,7 +92,29 @@ const PaymentPage = () => {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 32, background: '#fff', borderRadius: 12, display: 'flex', gap: 32 }}>
+    <>
+      <Modal
+        open={orderSuccessModal}
+        onCancel={() => {
+          setOrderSuccessModal(false);
+          navigate('/');
+        }}
+        footer={[
+          <Button key="ok" type="primary" onClick={() => {
+            setOrderSuccessModal(false);
+            navigate('/');
+          }}>
+            Đóng
+          </Button>
+        ]}
+        centered
+        title="Đặt hàng thành công!"
+      >
+        <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 600, color: '#52c41a', margin: 16 }}>
+          Cảm ơn bạn đã đặt hàng! Chúng tôi sẽ liên hệ xác nhận và giao hàng sớm nhất.
+        </div>
+      </Modal>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 32, background: '#fff', borderRadius: 12, display: 'flex', gap: 32 }}>
       {/* Left: User & Shipping Info */}
       <div style={{ flex: 2 }}>
         <Card title={<b>Thông tin mua hàng</b>} style={{ marginBottom: 24 }}>
@@ -121,14 +149,20 @@ const PaymentPage = () => {
               salePrice = item.price * (1 - discount / 100);
             }
             return (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                <img src={item.images?.[0] || item.image || '/assets/images/no-image.png'} alt={item.name} style={{ width: 48, height: 48, objectFit: 'contain', marginRight: 12 }} />
-                <span style={{ fontWeight: 600 }}>{item.name}</span>
-                {discount > 0 ? (
-                  <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 700 }}>{salePrice.toLocaleString('vi-VN')}₫</span>
-                ) : (
-                  <span style={{ marginLeft: 'auto', color: '#d0021b', fontWeight: 600 }}>{item.price?.toLocaleString('vi-VN')}₫</span>
-                )}
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
+                <img src={item.images?.[0] || item.image || '/assets/images/no-image.png'} alt={item.name} style={{ width: 60, height: 60, objectFit: 'cover', marginRight: 16, borderRadius: 8, border: '1px solid #eee' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{item.name}</div>
+                  {item.color && <div style={{ fontSize: 13, color: '#888' }}>Màu: {item.color}</div>}
+                  {item.quantity && <div style={{ fontSize: 13, color: '#888' }}>Số lượng: {item.quantity}</div>}
+                </div>
+                <div style={{ minWidth: 90, textAlign: 'right' }}>
+                  {discount > 0 ? (
+                    <span style={{ color: '#d0021b', fontWeight: 700 }}>{salePrice.toLocaleString('vi-VN')}₫</span>
+                  ) : (
+                    <span style={{ color: '#d0021b', fontWeight: 600 }}>{item.price?.toLocaleString('vi-VN')}₫</span>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -142,8 +176,7 @@ const PaymentPage = () => {
         </Card>
       </div>
     </div>
+    </>
   );
-};
-
-export default PaymentPage;
-
+}
+export default PaymentPage

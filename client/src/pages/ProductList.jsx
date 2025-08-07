@@ -65,7 +65,7 @@ const ProductList = () => {
 
   const navigate = useNavigate();
   const showProductDetail = (product) => {
-    navigate(`/product/${product._id}`);
+    navigate(`/product-detail/${product._id}`);
   };
 
   // Thêm vào giỏ hàng

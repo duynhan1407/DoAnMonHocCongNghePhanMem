@@ -10,15 +10,12 @@ const useFileUpload = () => {
         formData.append('file', file);
 
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/api/upload`, formData, {
-                headers: {
-                    Authorization: `Bearer ${access_token}`,
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            setIsUploading(false);
-            return response.data;
+        const response = await axios.post(
+            process.env.REACT_APP_CLOUDINARY_UPLOAD_URL,
+            formData
+        );
+        setIsUploading(false);
+        return response.data;
         } catch (error) {
             setIsUploading(false);
             throw new Error(error.response?.data?.message || 'File upload failed');

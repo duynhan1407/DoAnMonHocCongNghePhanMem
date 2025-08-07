@@ -16,7 +16,8 @@ const AdminDashboard = () => {
   const fetchStats = useCallback(async (startDate, endDate) => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/order/stats', {
+      const apiUrl = `${process.env.REACT_APP_API_URL}/api/order/stats`;
+      const res = await axios.get(apiUrl, {
         params: {
           startDate: startDate ? startDate.format('YYYY-MM-DD') : undefined,
           endDate: endDate ? endDate.format('YYYY-MM-DD') : undefined,

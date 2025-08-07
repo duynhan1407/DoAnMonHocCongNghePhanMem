@@ -94,7 +94,21 @@ const ProfilePage = () => {
             <div style={{ marginBottom: '10px' }}>
                 <label>Avatar</label>
                 <Upload
-                    action={process.env.REACT_APP_API_URL.replace(/\/$/, '') + "/api/upload"}  // Updated to use /api prefix
+                    customRequest={async ({ file, onSuccess, onError }) => {
+                      try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET);
+                        const response = await fetch(process.env.REACT_APP_CLOUDINARY_UPLOAD_URL, {
+                          method: 'POST',
+                          body: formData
+                        });
+                        const data = await response.json();
+                        onSuccess(data);
+                      } catch (err) {
+                        onError(err);
+                      }
+                    }}  // Upload trực tiếp lên Cloudinary
                     listType="picture-card"
                     onChange={handleAvatarChange}
                     showUploadList={false}  // Hide default upload list

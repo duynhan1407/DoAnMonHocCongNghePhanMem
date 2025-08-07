@@ -27,8 +27,10 @@ export const restockProduct = (data, token) => basePost('/api/order/restock', da
 // Xuất kho sản phẩm
 export const exportProduct = (data, token) => basePost('/api/order/export', data, token);
 
-export const createOrder = async (orderData) => {
+export const createOrder = async (orderData, token) => {
   // orderData: { products, customer, shipping, discount, total }
-  const response = await axios.post(API_URL, orderData);
+  const apiUrl = `${process.env.REACT_APP_API_URL}/api/order/create`;
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await axios.post(apiUrl, orderData, { headers });
   return response.data;
 };

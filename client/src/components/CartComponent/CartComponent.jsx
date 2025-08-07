@@ -53,23 +53,26 @@ const CartComponent = ({ cart, onCheckout, onRemove, loading, onChangeQuantity }
               onMouseOver={e => (e.currentTarget.style.background = '#e6fcfa')}
               onMouseOut={e => (e.currentTarget.style.background = '#f8f8f8')}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 16 }}>
-                  <b>{item.name}</b> {item.brand && `- ${item.brand}`} - {
-                    getDiscount(item) > 0
-                      ? <span style={{ color: '#ff1744', fontWeight: 700 }}>{getSalePrice(item).toLocaleString('vi-VN')}đ</span>
-                      : getSalePrice(item).toLocaleString('vi-VN') + 'đ'
-                  }
-                  <span style={{ marginLeft: 12, marginRight: 8 }}>
-                    <InputNumber
-                      min={1}
-                      max={item.maxQuantity || 99}
-                      value={item.quantity || 1}
-                      onChange={val => onChangeQuantity && onChangeQuantity(item._id || item.id, val)}
-                      size="small"
-                      style={{ width: 60 }}
-                    />
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <img src={item.images?.[0] || item.image || '/assets/images/no-image.png'} alt={item.name} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee', marginRight: 8 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{item.name} {item.brand && `- ${item.brand}`}</div>
+                  {item.color && <div style={{ fontSize: 13, color: '#888' }}>Màu: {item.color}</div>}
+                </div>
+                <div style={{ minWidth: 90, textAlign: 'right' }}>
+                  {getDiscount(item) > 0
+                    ? <span style={{ color: '#ff1744', fontWeight: 700 }}>{getSalePrice(item).toLocaleString('vi-VN')}đ</span>
+                    : getSalePrice(item).toLocaleString('vi-VN') + 'đ'}
+                </div>
+                <span style={{ marginLeft: 12, marginRight: 8 }}>
+                  <InputNumber
+                    min={1}
+                    max={item.maxQuantity || 99}
+                    value={item.quantity || 1}
+                    onChange={val => onChangeQuantity && onChangeQuantity(item._id || item.id, val)}
+                    size="small"
+                    style={{ width: 60 }}
+                  />
                 </span>
                 <button
                   style={{
