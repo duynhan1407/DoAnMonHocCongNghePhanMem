@@ -134,26 +134,22 @@ function QuanLySanPham() {
 
   useEffect(() => {
     fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
-    // Lắng nghe reloadProducts để tự động reload sản phẩm khi có sự kiện từ eventBus hoặc localStorage
+    // Lắng nghe reloadProducts và reloadProductsFromStock để tự động reload sản phẩm khi có sự kiện từ eventBus hoặc localStorage
     const reloadHandler = () => {
       fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
     };
     eventBus.on('reloadProducts', reloadHandler);
+    eventBus.on('reloadProductsFromStock', reloadHandler);
     const storageHandler = (e) => {
-      if (e.key === 'reloadProducts') {
+      if (e.key === 'reloadProducts' || e.key === 'reloadProductsFromStock') {
         fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
       }
     };
     window.addEventListener('storage', storageHandler);
-    // Lắng nghe khi thêm sản phẩm ở kho
-    const reloadFromStock = () => {
-      fetchProducts({ page: pagination.current - 1, limit: pagination.pageSize });
-    };
-    eventBus.on('reloadProductsFromStock', reloadFromStock);
     // Cleanup khi unmount
     return () => {
       eventBus.off('reloadProducts', reloadHandler);
-      eventBus.off('reloadProductsFromStock', reloadFromStock);
+      eventBus.off('reloadProductsFromStock', reloadHandler);
       window.removeEventListener('storage', storageHandler);
     };
     // eslint-disable-next-line
