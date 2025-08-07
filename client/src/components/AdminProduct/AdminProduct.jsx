@@ -113,11 +113,10 @@ function QuanLySanPham() {
             });
           }
         });
-        // Lọc quantity > 0
-        const filteredList = productList.filter(p => (p.quantity || 0) > 0);
-        setProducts(filteredList);
-        if (pagination.total !== (response.total || filteredList.length)) {
-          setPagination((prev) => ({ ...prev, total: response.total || filteredList.length }));
+        // Hiển thị tất cả sản phẩm, kể cả quantity = 0
+        setProducts(productList);
+        if (pagination.total !== (response.total || productList.length)) {
+          setPagination((prev) => ({ ...prev, total: response.total || productList.length }));
         }
       } else {
         throw new Error("Invalid product data structure.");
