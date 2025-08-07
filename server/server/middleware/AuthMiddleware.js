@@ -19,7 +19,7 @@ const AuthMiddleware = (req, res, next) => {
         });
     }
 
-    jwt.verify(tokenWithoutBearer, process.env.ACCESS_TOKEN, function (err, user) {
+    jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET, function (err, user) {
         if (err) {
             return res.status(401).json({
                 message: 'Authentication failed: Invalid token',
