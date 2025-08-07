@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import eventBus from '../../utils/eventBus';
 import { Table, Button, Input, Modal, message, Form, Select } from "antd";
 import * as ProductService from "../../services/ProductService";
+import * as BrandService from "../../services/BrandService";
 // Removed unused imports
 // Removed unused BrandService import
 
@@ -52,7 +53,7 @@ const AdminStockManager = () => {
   // Removed unused reviewModal and setReviewModal states
   // Removed unused currentReviews and currentProductName states
   const [displayProducts, setDisplayProducts] = useState([]);
-  // Removed all brands and setBrands logic
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(false);
   const [restockModal, setRestockModal] = useState(false);
   const [addModal, setAddModal] = useState(false);
@@ -60,6 +61,15 @@ const AdminStockManager = () => {
   const [restockQty, setRestockQty] = useState(1);
   const [addForm] = Form.useForm();
   // Thêm sản phẩm mới
+  // Lấy danh sách thương hiệu khi mở modal thêm sản phẩm
+  useEffect(() => {
+    if (addModal) {
+      BrandService.getAllBrands().then(res => {
+        setBrands(res?.data || []);
+      });
+    }
+  }, [addModal]);
+
   const handleAddProduct = async () => {
     try {
       const values = await addForm.validateFields();
@@ -172,6 +182,20 @@ const AdminStockManager = () => {
       }}>
         Thêm sản phẩm
       </Button>
+      <Modal
+        open={addModal}
+        title="Thêm sản phẩm mới"
+        onCancel={() => setAddModal(false)}
+        onOk={handleAddProduct}
+        okText="Thêm"
+      >
+        <Form form={addForm} layout="vertical">
+          <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}> <Input /> </Form.Item>
+          <Form.Item name="brand" label="Thương hiệu" rules={[{ required: true, message: 'Vui lòng chọn thương hiệu' }]}> <Select placeholder="Chọn thương hiệu"> {brands.map(b => <Select.Option key={b._id} value={b.name}>{b.name}</Select.Option>)} </Select> </Form.Item>
+          <Form.Item name="colors" label="Màu sắc"> <Select mode="tags" placeholder="Nhập màu sắc" /> </Form.Item>
+          <Form.Item name="quantity" label="Số lượng" rules={[{ required: false }]}> <Input type="number" min={0} /> </Form.Item>
+        </Form>
+      </Modal>
       {/* Đã loại bỏ bảng màu ở nút thêm sản phẩm theo yêu cầu */}
       <Table columns={columns} dataSource={displayProducts} rowKey={r => r.key} loading={loading} />
       {/* Đã loại bỏ modal đánh giá sản phẩm và các biến liên quan */}
