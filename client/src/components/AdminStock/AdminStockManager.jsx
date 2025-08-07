@@ -163,7 +163,15 @@ const AdminStockManager = () => {
       title: "Nhập kho",
       key: "restock",
       render: (_, record) => (
-        <Button type="primary" onClick={() => { setSelectedProduct(record); setRestockModal(true); }}>
+        <Button 
+          type="primary" 
+          onClick={() => { 
+            console.log('Selected product for restock:', record);
+            setSelectedProduct(record); 
+            setRestockQty(1);
+            setRestockModal(true); 
+          }}
+        >
           Nhập thêm
         </Button>
       )
@@ -174,28 +182,17 @@ const AdminStockManager = () => {
   return (
     <div style={{ padding: 24 }}>
       <h2>Quản lý kho sản phẩm</h2>
-      <Button type="primary" style={{ marginBottom: 16 }} onClick={() => {
-        if (selectedProduct && selectedProduct.colors) {
-          addForm.setFieldsValue({ colors: selectedProduct.colors });
-        }
-        setAddModal(true);
-      }}>
+      <Button 
+        type="primary" 
+        style={{ marginBottom: 16 }} 
+        onClick={() => {
+          addForm.resetFields();
+          setAddModal(true);
+        }}
+      >
         Thêm sản phẩm
       </Button>
-      <Modal
-        open={addModal}
-        title="Thêm sản phẩm mới"
-        onCancel={() => setAddModal(false)}
-        onOk={handleAddProduct}
-        okText="Thêm"
-      >
-        <Form form={addForm} layout="vertical">
-          <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}> <Input /> </Form.Item>
-          <Form.Item name="brand" label="Thương hiệu" rules={[{ required: true, message: 'Vui lòng chọn thương hiệu' }]}> <Select placeholder="Chọn thương hiệu"> {brands.map(b => <Select.Option key={b._id} value={b.name}>{b.name}</Select.Option>)} </Select> </Form.Item>
-          <Form.Item name="colors" label="Màu sắc"> <Select mode="tags" placeholder="Nhập màu sắc" /> </Form.Item>
-          <Form.Item name="quantity" label="Số lượng" rules={[{ required: false }]}> <Input type="number" min={0} /> </Form.Item>
-        </Form>
-      </Modal>
+      {/* Modal thêm sản phẩm đã được di chuyển xuống dưới */}
       {/* Đã loại bỏ bảng màu ở nút thêm sản phẩm theo yêu cầu */}
       <Table columns={columns} dataSource={displayProducts} rowKey={r => r.key} loading={loading} />
       {/* Đã loại bỏ modal đánh giá sản phẩm và các biến liên quan */}
@@ -203,8 +200,52 @@ const AdminStockManager = () => {
       <Modal
         open={restockModal}
         title={`Nhập kho: ${selectedProduct?.name}${selectedProduct?.color ? ` - Màu ${selectedProduct.color}` : ''}`}
-        onCancel={() => setRestockModal(false)}
-        // Removed handleRestock from Modal
+        onCancel={() => {
+          setRestockModal(false);
+          setSelectedProduct(null);
+          setRestockQty(1);
+        }}
+        onOk={async () => {
+          try {
+            if (!selectedProduct) {
+              message.error('Không có sản phẩm được chọn!');
+              return;
+            }
+            if (restockQty < 1) {
+              message.error('Số lượng nhập phải lớn hơn 0!');
+              return;
+            }
+            
+            const updatedQuantity = selectedProduct.quantity + restockQty;
+            const productId = selectedProduct._id;
+            
+            try {
+              const payload = {
+                quantity: updatedQuantity,
+                color: selectedProduct.color || null
+              };
+              
+              await ProductService.updateProductQuantity(productId, payload);
+              message.success('Cập nhật số lượng thành công!');
+              fetchProducts(); // Tải lại danh sách sản phẩm
+              setRestockModal(false);
+              setSelectedProduct(null);
+              setRestockQty(1);
+            } catch (error) {
+              console.error('Error updating product quantity:', error);
+              message.error('Có lỗi xảy ra khi cập nhật số lượng: ' + error.message);
+            }
+            
+            message.success('Cập nhật số lượng thành công!');
+            setRestockModal(false);
+            setSelectedProduct(null);
+            setRestockQty(1);
+            fetchProducts();
+            eventBus.emit('reloadProductsFromStock');
+          } catch (error) {
+            message.error('Có lỗi xảy ra khi cập nhật số lượng!');
+          }
+        }}
         okText="Xác nhận"
       >
         <div style={{ marginBottom: 8 }}>
@@ -213,6 +254,9 @@ const AdminStockManager = () => {
         </div>
         <div style={{ marginBottom: 8 }}>
           <b>Thương hiệu:</b> {selectedProduct?.brand}
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          <b>Số lượng hiện tại:</b> {selectedProduct?.quantity || 0}
         </div>
         <Input
           type="number"

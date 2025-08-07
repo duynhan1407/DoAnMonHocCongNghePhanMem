@@ -45,6 +45,35 @@ exports.getProductById = async (req, res) => {
   }
 };
 
+// Cập nhật số lượng sản phẩm
+exports.updateProductQuantity = async (req, res) => {
+  try {
+    const { quantity, color } = req.body;
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ status: 'ERR', message: 'Không tìm thấy sản phẩm' });
+    }
+
+    if (color) {
+      // Cập nhật số lượng cho màu cụ thể
+      const colorIndex = product.colors.findIndex(c => c.color === color);
+      if (colorIndex === -1) {
+        return res.status(404).json({ status: 'ERR', message: 'Không tìm thấy màu sắc này' });
+      }
+      product.colors[colorIndex].quantity = quantity;
+    } else {
+      // Cập nhật số lượng cho sản phẩm không có màu
+      product.quantity = quantity;
+    }
+
+    await product.save();
+    res.status(200).json({ status: 'OK', message: 'Cập nhật số lượng thành công', data: product });
+  } catch (error) {
+    res.status(500).json({ status: 'ERR', message: error.message });
+  }
+};
+
 // Cập nhật sản phẩm
 exports.updateProduct = async (req, res) => {
   try {

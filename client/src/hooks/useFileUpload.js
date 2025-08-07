@@ -10,7 +10,7 @@ const useFileUpload = () => {
         formData.append('file', file);
 
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/upload`, formData, {
+            const response = await axios.post(`${process.env.REACT_APP_API_URL.replace(/\/$/, '')}/api/upload`, formData, {
                 headers: {
                     Authorization: `Bearer ${access_token}`,
                     'Content-Type': 'multipart/form-data',

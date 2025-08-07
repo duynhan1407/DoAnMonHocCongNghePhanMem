@@ -14,4 +14,7 @@ router.delete('/delete/:id', AuthMiddleware, ProductController.deleteProduct);
 // Lấy tất cả sản phẩm
 router.get('/getAll', ProductController.getAllProducts);
 
+// Cập nhật số lượng sản phẩm
+router.put('/updateQuantity/:id', AuthMiddleware, ProductController.updateProductQuantity);
+
 module.exports = router;

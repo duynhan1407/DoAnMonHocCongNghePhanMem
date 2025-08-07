@@ -17,3 +17,6 @@ export const deleteProduct = (id) => baseDelete(`/api/product/delete/${id}`);
 
 // Lấy tất cả thương hiệu
 export const getAllBrands = (params) => baseGet('/api/brand/getAll', params);
+
+// Cập nhật số lượng sản phẩm (admin)
+export const updateProductQuantity = (id, data) => basePut(`/api/product/updateQuantity/${id}`, data);

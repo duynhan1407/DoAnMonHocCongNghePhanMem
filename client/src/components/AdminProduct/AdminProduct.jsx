@@ -707,7 +707,7 @@ function QuanLySanPham() {
           {/* Trạng thái sản phẩm sẽ tự động cập nhật theo số lượng, không cho phép chỉnh sửa ở đây */}
           <Form.Item name="images" label="Hình ảnh sản phẩm">
             <Upload
-              action={process.env.REACT_APP_API_URL.replace(/\/$/, '') + "/upload"}
+              action={process.env.REACT_APP_API_URL.replace(/\/$/, '') + "/api/upload"}
               listType="picture-card"
               fileList={fileList}
               onChange={handleUploadChange}
