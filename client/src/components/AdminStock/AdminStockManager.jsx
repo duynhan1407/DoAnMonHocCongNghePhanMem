@@ -235,14 +235,16 @@ const AdminStockManager = () => {
           <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}> 
             <Input />
           </Form.Item>
-          <Form.Item name="brand" label="Thương hiệu" rules={[{ required: true, message: 'Nhập thương hiệu' }]}> 
-            <Input placeholder="Nhập thương hiệu" />
+          <Form.Item name="brand" label="Thương hiệu" rules={[{ required: true, message: 'Chọn thương hiệu' }]}> 
+            <Select placeholder="Chọn thương hiệu">
+              {brands.map(b => <Select.Option key={b._id} value={b.name}>{b.name}</Select.Option>)}
+            </Select>
           </Form.Item>
           <Form.Item name="colors" label="Màu sắc (có thể chọn nhiều)">
             <Select
               mode="tags"
               style={{ width: '100%' }}
-              placeholder="Nhập màu sắc, ví dụ: Đỏ, Xanh, Đen... (gõ tên màu rồi enter)"
+              placeholder="Nhập màu sắc"
               tokenSeparators={[',']}
               allowClear
               options={[]}
