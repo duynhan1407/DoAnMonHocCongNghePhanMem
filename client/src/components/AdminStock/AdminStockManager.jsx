@@ -12,18 +12,21 @@ const AdminStockManager = () => {
     try {
       const res = await ProductService.getAllProducts();
       const rawProducts = res?.data || [];
-      await Promise.all(rawProducts.map(async (product) => {
-        const newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
-        if (product.status !== newStatus) {
-          await ProductService.updateProduct(product._id, { status: newStatus });
-          product.status = newStatus;
-        }
-      }));
-      // Tách mỗi màu thành 1 dòng riêng biệt với quantity đúng
+      // Tách mỗi màu thành 1 dòng riêng biệt với quantity và status đúng
       const productList = [];
-      rawProducts.forEach(product => {
+      await Promise.all(rawProducts.map(async (product) => {
         if (Array.isArray(product.colors) && product.colors.length > 0) {
-          product.colors.forEach((colorObj) => {
+          for (const colorObj of product.colors) {
+            // Xác định trạng thái cho từng màu
+            const colorStatus = (typeof colorObj.quantity === 'number' && colorObj.quantity > 0) ? 'Available' : 'OutOfStock';
+            // Nếu trạng thái màu khác với DB thì cập nhật
+            if (colorObj.status !== colorStatus) {
+              // Gọi API cập nhật trạng thái cho màu
+              await ProductService.updateProduct(product._id, {
+                colors: product.colors.map(c => c.color === colorObj.color ? { ...c, status: colorStatus } : c)
+              });
+              colorObj.status = colorStatus;
+            }
             productList.push({
               ...product,
               color: colorObj.color,
@@ -31,18 +34,26 @@ const AdminStockManager = () => {
               price: colorObj.price,
               description: colorObj.description,
               key: `${product._id}-${colorObj.color}`,
-              quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0
+              quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0,
+              status: colorStatus
             });
-          });
+          }
         } else {
+          // Sản phẩm không màu, trạng thái dựa vào tổng quantity
+          const newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
+          if (product.status !== newStatus) {
+            await ProductService.updateProduct(product._id, { status: newStatus });
+            product.status = newStatus;
+          }
           productList.push({
             ...product,
             color: null,
             key: `${product._id}-no-color`,
-            quantity: typeof product.quantity === 'number' ? product.quantity : 0
+            quantity: typeof product.quantity === 'number' ? product.quantity : 0,
+            status: newStatus
           });
         }
-      });
+      }));
       setDisplayProducts(productList);
     } catch {
       message.error("Không thể lấy danh sách sản phẩm");

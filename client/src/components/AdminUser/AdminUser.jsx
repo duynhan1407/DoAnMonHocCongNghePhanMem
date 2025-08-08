@@ -59,7 +59,11 @@ const AdminUser = () => {
           (u.phone && u.phone.toLowerCase().includes(lower))
         );
       }
-      setUsers(filtered.map((user) => ({ ...user, key: user._id })));
+      setUsers(filtered.map((user) => ({
+        ...user,
+        key: user._id,
+        role: user.isAdmin ? 'admin' : (user.role || 'user')
+      })));
     } catch (error) {
       message.error(error?.response?.data?.message || 'Không thể tải danh sách người dùng.');
     } finally {

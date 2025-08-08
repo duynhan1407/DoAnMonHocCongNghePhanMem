@@ -94,6 +94,7 @@ const Navbar = () => {
         <Dropdown
           overlay={
             <Menu>
+              <Menu.Item key="all-categories" onClick={() => navigate('/')}>Tất cả danh mục</Menu.Item>
               {categories.length === 0 ? (
                 <Menu.Item disabled>Đang tải...</Menu.Item>
               ) : (
@@ -128,6 +129,7 @@ const Navbar = () => {
         <Dropdown
           overlay={
             <Menu>
+              <Menu.Item key="all-brands" onClick={() => navigate('/')}>Tất cả thương hiệu</Menu.Item>
               {brands.length === 0 ? (
                 <Menu.Item disabled>Đang tải...</Menu.Item>
               ) : (

@@ -68,26 +68,20 @@ function QuanLySanPham() {
     try {
       const response = await getAllProducts(params);
       if (response?.data && Array.isArray(response.data)) {
-        // Tự động cập nhật trạng thái sản phẩm dựa vào số lượng
-        await Promise.all(response.data.map(async (product) => {
-          let newStatus = 'OutOfStock';
-          if (Array.isArray(product.colors) && product.colors.length > 0) {
-            // Nếu có màu, kiểm tra quantity của từng màu
-            const hasStock = product.colors.some(c => typeof c.quantity === 'number' && c.quantity > 0);
-            newStatus = hasStock ? 'Available' : 'OutOfStock';
-          } else {
-            newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
-          }
-          if (product.status !== newStatus) {
-            await updateProduct(product._id, { status: newStatus });
-            product.status = newStatus;
-          }
-        }));
-        // Tách mỗi màu thành 1 dòng riêng biệt
+        // Tách mỗi màu thành 1 dòng riêng biệt, trạng thái dựa vào quantity từng màu
         const productList = [];
-        response.data.forEach(product => {
+        await Promise.all(response.data.map(async (product) => {
           if (Array.isArray(product.colors) && product.colors.length > 0) {
-            product.colors.forEach((colorObj) => {
+            for (const colorObj of product.colors) {
+              // Trạng thái riêng cho từng màu
+              const colorStatus = (typeof colorObj.quantity === 'number' && colorObj.quantity > 0) ? 'Available' : 'OutOfStock';
+              // Nếu trạng thái màu khác DB thì cập nhật
+              if (colorObj.status !== colorStatus) {
+                await updateProduct(product._id, {
+                  colors: product.colors.map(c => c.color === colorObj.color ? { ...c, status: colorStatus } : c)
+                });
+                colorObj.status = colorStatus;
+              }
               productList.push({
                 ...product,
                 color: colorObj.color,
@@ -96,20 +90,27 @@ function QuanLySanPham() {
                 description: colorObj.description,
                 key: `${product._id}-${colorObj.color}`,
                 quantity: typeof colorObj.quantity === 'number' ? colorObj.quantity : 0,
-                rating: typeof colorObj.rating === 'number' ? colorObj.rating : 0 // rating từng màu
+                rating: typeof colorObj.rating === 'number' ? colorObj.rating : 0,
+                status: colorStatus
               });
-            });
+            }
           } else {
+            // Sản phẩm không màu, trạng thái dựa vào tổng quantity
+            const newStatus = product.quantity > 0 ? 'Available' : 'OutOfStock';
+            if (product.status !== newStatus) {
+              await updateProduct(product._id, { status: newStatus });
+              product.status = newStatus;
+            }
             productList.push({
               ...product,
               color: null,
               key: `${product._id}-no-color`,
               quantity: typeof product.quantity === 'number' ? product.quantity : 0,
-              rating: typeof product.rating === 'number' ? product.rating : 0
+              rating: typeof product.rating === 'number' ? product.rating : 0,
+              status: newStatus
             });
           }
-        });
-        // Hiển thị tất cả sản phẩm, kể cả quantity = 0
+        }));
         setProducts(productList);
         if (pagination.total !== (response.total || productList.length)) {
           setPagination((prev) => ({ ...prev, total: response.total || productList.length }));

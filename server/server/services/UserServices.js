@@ -50,18 +50,19 @@ const createUser = async (newUser) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user
+        // Create new user (always set isAdmin to false by default)
         const createdUser = await User.create({
             name,
             email,
             password: hashedPassword,
-            phone
+            phone,
+            isAdmin: false
         });
 
         return {
             status: 'OK',
             message: 'User created successfully',
-            data: createdUser
+            data: createdUser.toJSON()
         };
     } catch (e) {
         throw new Error('Error creating user: ' + e.message);
@@ -119,7 +120,8 @@ const loginUser = async (userLogin) => {
                 username: checkUser.username || '',
                 fullName: checkUser.fullName || '',
                 email: checkUser.email,
-                isAdmin: isAdmin
+                isAdmin: isAdmin,
+                role: checkUser.role || (isAdmin ? 'admin' : 'user')
             }
         };
     } catch (e) {
@@ -141,7 +143,7 @@ const updateUser = async (id, data) => {
         return {
             status: 'OK',
             message: 'User updated successfully',
-            data: updatedUser
+            data: updatedUser.toJSON()
         };
     } catch (e) {
         throw new Error('Error updating user: ' + e.message);
@@ -174,7 +176,7 @@ const getAllUsers = async () => {
         return {
             status: 'OK',
             message: 'Fetched all users successfully',
-            data: allUsers
+            data: allUsers.map(u => u.toJSON())
         };
     } catch (e) {
         throw new Error('Error fetching users: ' + e.message);
@@ -194,7 +196,7 @@ const getDetailUser = async (id) => {
         return {
             status: 'OK',
             message: 'Fetched user details successfully',
-            data: user
+            data: user.toJSON()
         };
     } catch (e) {
         throw new Error('Error fetching user details: ' + e.message);

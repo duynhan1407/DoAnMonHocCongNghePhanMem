@@ -293,6 +293,8 @@ const updateOrder = async (req, res) => {
       updateData.isPaid = true;
       updateData.paidAt = new Date();
     }
+    // Lấy đơn hàng cũ để kiểm tra trạng thái trước khi cập nhật
+    const oldOrder = await Order.findById(id);
     const updatedOrder = await Order.findByIdAndUpdate(
       id,
       updateData,
@@ -302,6 +304,31 @@ const updateOrder = async (req, res) => {
       .populate('orderItems.productId', 'name price discount images');
     if (!updatedOrder) {
       return res.status(404).json({ status: 'ERR', message: 'Order not found' });
+    }
+    // Nếu trạng thái chuyển sang 'cancelled' và trước đó KHÔNG phải 'cancelled', cộng lại số lượng kho
+    if (
+      updateData.status && updateData.status.toLowerCase() === 'cancelled' &&
+      oldOrder && oldOrder.status !== 'cancelled' && Array.isArray(oldOrder.orderItems)
+    ) {
+      for (const item of oldOrder.orderItems) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          if (item.color && Array.isArray(product.colors)) {
+            const colorIdx = product.colors.findIndex(c => c.color === item.color);
+            if (colorIdx !== -1) {
+              if (typeof product.colors[colorIdx].quantity !== 'number') {
+                product.colors[colorIdx].quantity = 0;
+              }
+              product.colors[colorIdx].quantity += item.quantity || 1;
+              await product.save();
+              continue;
+            }
+          }
+          // Nếu không có màu, cộng lại tổng quantity
+          product.quantity = (product.quantity || 0) + (item.quantity || 1);
+          await product.save();
+        }
+      }
     }
     return res.status(200).json({
       status: 'OK',

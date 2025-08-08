@@ -36,11 +36,19 @@ const UserSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     }
+
 },
     {
-        timestamps: true
+        timestamps: true,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true }
     }
 );
+
+// Virtual field for role
+UserSchema.virtual('role').get(function() {
+    return this.isAdmin ? 'admin' : 'user';
+});
 
 const User = mongoose.model('User',UserSchema);
 module.exports = User;
