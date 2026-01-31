@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { WrapperContainerLeft, WrapperText } from './style';
 import InputForm from '../../components/InputForm/InputForm';
-import ButtonComponent from '../../components/ButtonComponent/ButtonComponent';
+import { Button } from '../../components';
 import { Image } from 'antd';
 import logoLogin from '../../assets/Logo-login.jpg';
 import { useNavigate } from 'react-router-dom';
@@ -62,7 +62,7 @@ const SignUpPage = () => {
           <InputForm style={{ marginBottom: '6px' }} placeholder="Mật khẩu" value={password} onChange={handleOnchangePassword} />
           <InputForm placeholder="Xác nhận mật khẩu" value={confirmPassword} onChange={handleOnchangeConfirmPassword} />
           {data?.status === 'ERR' && <span>{data?.message}</span>}
-          <ButtonComponent
+          <Button
             disabled={(!email.length && !username.length) || !password.length || !confirmPassword.length}
             onClick={handleSignUp}
             bodered={false}

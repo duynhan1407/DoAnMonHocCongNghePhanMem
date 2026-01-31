@@ -1,6 +1,10 @@
 import React from 'react';
 import * as CategoryService from '../../services/CategoryService';
-  const [categoryName, setCategoryName] = React.useState(product.category);
+const ProductDetailComponent = ({ product }) => {
+  if (!product) return <div>Không tìm thấy sản phẩm</div>;
+  const images = product.images && product.images.length > 0 ? product.images : [product.image];
+
+  const [categoryName, setCategoryName] = React.useState(product?.category || '');
   React.useEffect(() => {
     if (product?.category) {
       CategoryService.getAllCategories()
@@ -9,11 +13,10 @@ import * as CategoryService from '../../services/CategoryService';
           setCategoryName(found ? found.name : product.category);
         })
         .catch(() => setCategoryName(product.category));
+    } else {
+      setCategoryName('');
     }
   }, [product]);
-const ProductDetailComponent = ({ product }) => {
-  if (!product) return <div>Không tìm thấy sản phẩm</div>;
-  const images = product.images && product.images.length > 0 ? product.images : [product.image];
 
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: '0 0 40px 0' }}>

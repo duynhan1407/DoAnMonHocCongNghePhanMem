@@ -1,4 +1,7 @@
 import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL;
+
 export const createVNPayQRCode = async (amount) => {
   try {
     const res = await axios.post(`${API_URL}/payment/create-vnpay-qr`, { amount });
@@ -7,10 +10,6 @@ export const createVNPayQRCode = async (amount) => {
     throw new Error(error?.response?.data?.message || 'Không thể tạo mã QR VNPay');
   }
 };
-
-
-
-const API_URL = process.env.REACT_APP_API_URL;
 
 export const createVNPayUrl = async (amount) => {
   try {

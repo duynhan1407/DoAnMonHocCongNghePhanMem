@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import * as UserServices from '../../services/UserServices';
 import { setUser } from '../../redux/Slide/userSlide';
 import { Button, Input, message } from 'antd';
-import { jwtDecode } from 'jwt-decode'; // Import jwt-decode
+import jwtDecode from 'jwt-decode'; // Import jwt-decode
 import { SignInWrapper, SignInContainer, Title, InputWrapper, GoogleButtonWrapper, GoogleButton } from './style';
 import axios from 'axios';
 

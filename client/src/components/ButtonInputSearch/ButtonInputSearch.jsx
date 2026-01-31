@@ -1,7 +1,6 @@
 import React from 'react';
 import { SearchOutlined } from '@ant-design/icons';
-import InputComponnent from '../InputComponent/InputComponnent';
-import ButtonComponent from '../ButtonComponent/ButtonComponent';
+import { Input, Button } from '..';
 
 const ButtonInputSearch = (props) => {
   const {
@@ -19,7 +18,7 @@ const ButtonInputSearch = (props) => {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', ...containerStyle }}>
-      <InputComponnent
+      <Input
         size={size}
         placeholder={placeholder}
         bordered={bordered}
@@ -30,7 +29,7 @@ const ButtonInputSearch = (props) => {
           ...inputStyle,
         }}
       />
-      <ButtonComponent
+      <Button
         size={size}
         bordered={bordered}
         style={{

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Upload, Input, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import * as UserServices from '../../services/UserServices';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {

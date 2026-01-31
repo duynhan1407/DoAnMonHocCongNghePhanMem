@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import ButtonComponent from "../../components/ButtonComponent/ButtonComponent";
+import { Button } from "../../components";
 
 export const WrapperTypeRoom = styled.div`
     display: flex;
@@ -12,7 +12,7 @@ export const WrapperTypeRoom = styled.div`
     border-radius: 10px 10px 0 0;
 `;
 
-export const WrapperButtonMore = styled(ButtonComponent)`
+export const WrapperButtonMore = styled(Button)`
     &:hover{
         color: #fff;
         background: #2563eb;
@@ -44,7 +44,7 @@ export const WrapperProducts = styled.div`
     }
 `;
 
-export const HomeResponsiveButton = styled(ButtonComponent)`
+export const HomeResponsiveButton = styled(Button)`
     @media (max-width: 900px) {
         top: 10px !important;
         right: 10px !important;

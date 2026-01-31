@@ -2,12 +2,12 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import { routes } from "./routes";
 import DefaultComponent from "./components/DefaultComponent/DefaultComponent";
 import * as UserServices from "./services/UserServices";
 import { logoutUser, setUser } from "./redux/Slide/userSlide";
-import Loading from "./components/LoadingComponent/Loading";
+import { Loading } from "./components";
 // Debug: kiểm tra giá trị userName khi app khởi động
 console.log('App khởi động - userName trong localStorage:', localStorage.getItem('userName'));
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import NavbarComponent from '../../components/NavbarComponent/NavbarComponent'
-import CardComponent from '../../components/CardComponent/CardComponent'
-import { Pagination, Row, Col } from 'antd'
+import { Card } from '../../components'
+import { Pagination, Row, Col } from 'antd' 
 import { WrapperNavbar, WrapperProducts } from './style'
 
 const TypeOrderPage = () => {
@@ -14,7 +14,7 @@ const TypeOrderPage = () => {
                 </WrapperNavbar>
                 <Col>
                     <WrapperProducts span={20}>
-                        <CardComponent />
+                        <Card />
                     </WrapperProducts>
                 </Col>
         </Row>

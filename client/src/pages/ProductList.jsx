@@ -70,13 +70,13 @@ const ProductList = () => {
 
   // Thêm vào giỏ hàng
   const handleAddToCart = (product) => {
-    const cart = JSON.parse(localStorage.getItem('cartProducts') || '[]');
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     if (cart.some(item => item._id === product._id)) {
       message.info('Sản phẩm đã có trong giỏ hàng!');
       return;
     }
     cart.push({ ...product, productId: product._id, quantity: 1 });
-    localStorage.setItem('cartProducts', JSON.stringify(cart));
+    localStorage.setItem('cart', JSON.stringify(cart));
     message.success('Đã thêm vào giỏ hàng!');
   };
   // ...existing code...

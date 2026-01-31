@@ -11,6 +11,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -18,16 +19,19 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export const baseGet = (url, params) => axiosInstance.get(url, { params }).then(res => res.data);
-export const basePost = (url, data, token) => {
+// baseGet accepts optional axios config (params, headers, etc.)
+export const baseGet = (url, config = {}) => axiosInstance.get(url, config).then(res => res.data);
+
+// basePost accepts data and optional config or token string for backward compatibility
+export const basePost = (url, data, configOrToken = {}) => {
   let config = {};
-  if (token) {
-    config.headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    };
+  if (typeof configOrToken === 'string') {
+    config.headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${configOrToken}` };
+  } else {
+    config = configOrToken || {};
   }
   return axiosInstance.post(url, data, config).then(res => res.data);
 };
-export const basePut = (url, data) => axiosInstance.put(url, data).then(res => res.data);
-export const baseDelete = (url) => axiosInstance.delete(url).then(res => res.data);
+
+export const basePut = (url, data, config = {}) => axiosInstance.put(url, data, config).then(res => res.data);
+export const baseDelete = (url, config = {}) => axiosInstance.delete(url, config).then(res => res.data);

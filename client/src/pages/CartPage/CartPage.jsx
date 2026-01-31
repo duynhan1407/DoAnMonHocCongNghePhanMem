@@ -9,7 +9,7 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 // import * as PaymentService from '../../services/PaymentService';
 import { Modal } from 'antd';
 import { setUser } from '../../redux/Slide/userSlide';
-import { jwtDecode } from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import * as UserServices from '../../services/UserServices';
 
 // Extend dayjs plugin after all imports
